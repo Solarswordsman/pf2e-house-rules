@@ -19,11 +19,19 @@ pf2e-house-rules/
 
 ## Install
 
-1. Copy this folder into your Foundry `Data/modules/` directory. The folder name must match the `id` in `module.json` (default `pf2e-house-rules`).
-2. Launch your world and enable the module in **Manage Modules**.
-3. Enable it **for everyone** — both tweaks are per-user or use a GM relay, so every client should load it.
+**Recommended — by manifest URL.** In Foundry, open *Add-on Modules → Install Module* and paste:
 
-> **Renaming the module?** Change `id` in `module.json` **and** the `MODULE_ID` constant in `scripts/toolbelt-set-targets.js` so they match. The player→GM socket channel is `module.<id>`, and it only works if they agree and `"socket": true` stays in the manifest.
+```
+https://github.com/Solarswordsman/pf2e-house-rules/releases/latest/download/module.json
+```
+
+Foundry downloads the latest release and re-checks that URL on every world load, so new versions install themselves. Then enable it in **Manage Modules** **for everyone** — both tweaks are per-user or use a GM relay, so every client should load it.
+
+> Foundry only pulls modules to the **server**. Players get updated code on their next reconnect.
+
+**Manual fallback (local dev).** Copy this folder into your Foundry `Data/modules/` directory; the folder name must match the `id` in `module.json` (default `pf2e-house-rules`). Handy while iterating on a tweak before cutting a release. Then enable it as above.
+
+> **Renaming the module?** Change `id` in `module.json` **and** the `MODULE_ID` constant in `scripts/toolbelt-set-targets.js` so they match. The player→GM socket channel is `module.<id>`, and it only works if they agree and `"socket": true` stays in the manifest. (Update the `manifest`/`download`/`url` paths too.)
 
 ## Tweaks
 
@@ -56,3 +64,12 @@ Raises the maximum **additional shortcut slots** on the PF2e HUD Persistent HUD 
 1. Create `scripts/<your-tweak>.js`.
 2. Add its path to the `esmodules` array in `module.json`.
 3. Document it under **Tweaks** above (and in `CLAUDE.md` if it carries non-obvious facts).
+
+### Releasing a new version
+
+Releases are published automatically by `.github/workflows/release.yml` on any `v*` tag:
+
+1. Bump `"version"` in `module.json` and commit.
+2. Tag and push: `git tag v1.2.3 && git push origin v1.2.3`.
+
+The workflow pins the version, builds `module.zip` (with `module.json` at the zip root, as Foundry requires), and publishes a GitHub Release with `module.json` + `module.zip` attached — which the manifest URL above resolves to.
