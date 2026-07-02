@@ -6,7 +6,11 @@
   "compatibility": { "minimum": "14", "verified": "14" },
   "esmodules": [
     "scripts/toolbelt-set-targets.js",
-    "scripts/pf2e-hud-slots.js"
+    "scripts/pf2e-hud-slots.js",
+    "scripts/ap-journal-styles.js"
+  ],
+  "styles": [
+    "styles/ap-journal-styles.css"
   ],
   "socket": true,
   "authors": [{ "name": "Jeff Lamb" }],

@@ -12,9 +12,12 @@ pf2e-house-rules/
 ├── module.json
 ├── README.md
 ├── CLAUDE.md
-└── scripts/
-    ├── toolbelt-set-targets.js
-    └── pf2e-hud-slots.js
+├── scripts/
+│   ├── toolbelt-set-targets.js
+│   ├── pf2e-hud-slots.js
+│   └── ap-journal-styles.js
+└── styles/
+    └── ap-journal-styles.css
 ```
 
 ## Install
@@ -52,6 +55,15 @@ Raises the maximum **additional shortcut slots** on the PF2e HUD Persistent HUD 
 - **Requires:** [pf2e-hud](https://github.com/reonZ/pf2e-hud).
 
 **Why it's safe:** pf2e-hud's slot framework is fully dynamic (total slots = `18 + setting`; the render loop, template, and `grid-auto-flow: column` CSS all scale automatically). The only real limit is the settings slider's `range.max`, so we just raise that bound and the rest follows.
+
+### 3. AP Journal Styles — `scripts/ap-journal-styles.js` + `styles/ap-journal-styles.css`
+
+Makes it practical to author the rich journal blocks used by the Metamorphic/Paizo Adventure Path modules (read-aloud boxes, encounter boxes, sidebars, action blocks, traits, advancement tracks) from the rich-text editor, instead of hand-writing HTML in code view.
+
+- **Use:** in any ProseMirror editor, open the **Format ▾** dropdown → **Adventure Path**. Toggles flip a class on the current block (Read Aloud, No Indent, No TOC, Float Left/Right); the rest insert a ready-made scaffold at the cursor (Encounter Box, Sidebar, Action Block, Traits List, Advancement Track, Chapter Heading) whose placeholder text you then replace.
+- **Requires:** nothing. The blocks only *render* with AP styling inside a Metamorphic AP module's journal sheet, but authoring the markup works anywhere, and the editor shows each block with a neutral outline + label so the structure is visible while editing.
+
+**Why it's built this way:** the AP modules style plain classed HTML (`<p class="read-aloud">`, `<section class="encounter">`, …), scoped to their own journal sheet, so the editor shows none of it. This tweak plugs into the same `getProseMirrorMenuDropDowns` hook the PF2e system uses for its own styles. Classes are written into the node's `_preserve` attribute — Foundry's attribute-capture channel — because a plain `class` attribute would be stripped by the ProseMirror schema on save. Scaffolds are parsed through Foundry's own schema so they round-trip identically to hand-written markup. The CSS is scoped entirely under `.ProseMirror`, so journal view mode is untouched.
 
 ## Development
 

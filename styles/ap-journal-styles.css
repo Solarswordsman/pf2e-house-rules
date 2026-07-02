@@ -1,0 +1,164 @@
+/**
+ * AP Journal Styles — editor-only affordances.
+ *
+ * The real AP styling lives in the Metamorphic modules and only applies in
+ * their journal sheet. Inside the ProseMirror editor those classes render as
+ * plain text, so this sheet gives each known block a neutral outline, tint,
+ * and a small label chip — enough to see the structure without recreating the
+ * AP look. Everything is scoped under .ProseMirror so view mode is untouched.
+ */
+
+/* ---- shared label chip ---- */
+.ProseMirror p.read-aloud::before,
+.ProseMirror section.encounter::before,
+.ProseMirror aside.sidebar::before,
+.ProseMirror aside.float-left::before,
+.ProseMirror aside.float-right::before,
+.ProseMirror section.action::before,
+.ProseMirror section.advancement-track::before {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-family: Signika, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  margin-bottom: 0.25em;
+  user-select: none;
+}
+
+/* ---- read-aloud ---- */
+.ProseMirror p.read-aloud {
+  background: rgba(120, 100, 60, 0.12);
+  border-left: 3px solid rgba(120, 100, 60, 0.55);
+  border-radius: 2px;
+  padding: 0.4em 0.6em;
+}
+.ProseMirror p.read-aloud::before {
+  content: "read aloud";
+}
+
+/* ---- encounter box ---- */
+.ProseMirror section.encounter {
+  background: rgba(140, 40, 40, 0.08);
+  border: 1px dashed rgba(140, 40, 40, 0.5);
+  border-radius: 3px;
+  padding: 0.4em 0.6em;
+  margin: 0.5em 0;
+}
+.ProseMirror section.encounter::before {
+  content: "encounter";
+}
+.ProseMirror section.encounter .header img {
+  max-height: 3em;
+  border: none;
+}
+/* name left, severity right — mirrors the AP layout so misplaced spans are obvious */
+.ProseMirror section.encounter .header h2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1em;
+  border-bottom: 1px solid rgba(140, 40, 40, 0.4);
+}
+
+/* ---- sidebars ---- */
+.ProseMirror aside.sidebar,
+.ProseMirror aside.float-left,
+.ProseMirror aside.float-right {
+  background: rgba(60, 90, 130, 0.1);
+  border: 1px dashed rgba(60, 90, 130, 0.5);
+  border-radius: 3px;
+  padding: 0.4em 0.6em;
+  margin: 0.5em 0;
+}
+.ProseMirror aside.sidebar::before {
+  content: "sidebar";
+}
+.ProseMirror aside.float-left::before {
+  content: "sidebar · float-left";
+}
+.ProseMirror aside.float-right::before {
+  content: "sidebar · float-right";
+}
+.ProseMirror aside.sidebar.float-right::before {
+  content: "sidebar · float-right";
+}
+
+/* ---- action block ---- */
+.ProseMirror section.action {
+  background: rgba(90, 60, 120, 0.1);
+  border: 1px dashed rgba(90, 60, 120, 0.5);
+  border-radius: 3px;
+  padding: 0.4em 0.6em;
+  margin: 0.5em 0;
+}
+.ProseMirror section.action::before {
+  content: "action";
+}
+
+/* ---- traits ---- */
+.ProseMirror ul.traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em;
+  list-style: none;
+  padding: 0;
+  margin: 0.35em 0;
+}
+.ProseMirror ul.traits li.trait {
+  background: #58180d;
+  color: #fff;
+  border: 1px solid #d8c384;
+  padding: 0.05em 0.5em;
+  font-size: 0.75em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ---- advancement track ---- */
+.ProseMirror section.advancement-track {
+  background: rgba(50, 110, 70, 0.1);
+  border: 1px dashed rgba(50, 110, 70, 0.5);
+  border-radius: 3px;
+  padding: 0.4em 0.6em;
+  margin: 0.5em 0;
+}
+.ProseMirror section.advancement-track::before {
+  content: "advancement track";
+}
+.ProseMirror section.advancement-track span.level {
+  display: inline-block;
+  background: rgba(50, 110, 70, 0.55);
+  color: #fff;
+  border-radius: 50%;
+  width: 1.5em;
+  height: 1.5em;
+  line-height: 1.5em;
+  text-align: center;
+  font-weight: 700;
+  margin-right: 0.3em;
+}
+
+/* ---- utility class markers ---- */
+.ProseMirror .no-toc::after {
+  content: " · no-toc";
+  font-size: 0.6em;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  opacity: 0.5;
+  text-transform: uppercase;
+  vertical-align: middle;
+  user-select: none;
+}
+.ProseMirror p.no-indent::after {
+  content: " · no-indent";
+  font-size: 0.7em;
+  opacity: 0.5;
+  text-transform: uppercase;
+  user-select: none;
+}
+.ProseMirror h1.chapter-heading {
+  border-bottom: 2px double rgba(120, 100, 60, 0.6);
+  padding-bottom: 0.15em;
+}

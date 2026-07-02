@@ -32,6 +32,12 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 **`scripts/pf2e-hud-slots.js`** — raise the Persistent HUD shortcut-slot cap.
 - Setting key `pf2e-hud.persistent.slots` (per-user, step 2). Total slots = `18 + slots`. The framework (render loop, template, `grid-auto-flow: column` CSS) is fully dynamic; only the slider's `range.max` caps it. Bump `game.settings.settings.get("pf2e-hud.persistent.slots").range.max` on the `ready` hook, before the settings window is opened.
 
+**`scripts/ap-journal-styles.js`** (+ `styles/ap-journal-styles.css`) — author Metamorphic AP journal blocks from the rich-text editor.
+- Adds an "Adventure Path" submenu to the ProseMirror Format dropdown via the `getProseMirrorMenuDropDowns` hook (same mechanism the PF2e system uses; see their `src/scripts/hooks/get-prosemirror-menu-dropdowns.ts` for the canonical pattern).
+- **Classes must go in the node's `_preserve` attr** (`attrs: { _preserve: { class: "read-aloud" } }`) — that's Foundry's attribute-capture channel; a bare `class` attr is stripped by the schema on save. Scaffold HTML is parsed with `foundry.prosemirror.dom.parseString` against the editor schema so inserted content round-trips identically to loaded content.
+- Metamorphic markup vocabulary (extracted from the real Season of Ghosts packs): `p.read-aloud`; `section.encounter > div.header > (img + h2.split.no-toc > span.keepme×2 + span.link)` — the second `keepme` span is the right-aligned severity; `aside.sidebar` / `aside.float-right`; `section.action` + `ul.traits > li.trait`; `section.advancement-track` with `span.level`; utility classes `no-toc`, `no-indent`, `split`, `keepme`, `float-left/right`. Their CSS is tag-sensitive (`aside.sidebar`, not `.sidebar`) and scoped to their sheet's wrapper class (e.g. `.seasonofghosts-wrapper`), which is why the editor shows nothing — our CSS adds neutral editor-only affordances, all scoped under `.ProseMirror`.
+- `reference/` holds the Season of Ghosts basis pack + first AP for inspection; it is not shipped (the release zip packs only `scripts`/`styles`). Journal HTML lives inside LevelDB packs: read with `classic-level` on a **copy** of the pack dir (never the original — opening takes the LOCK); documents sit at `adventure.journal[].pages[].text.content`.
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.

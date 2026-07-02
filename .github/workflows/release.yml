@@ -38,7 +38,7 @@ jobs:
 
       # Foundry expects module.json at the zip root, so build the zip ourselves.
       - name: Build module.zip
-        run: zip -r module.zip module.json scripts README.md
+        run: zip -r module.zip module.json scripts styles README.md
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
