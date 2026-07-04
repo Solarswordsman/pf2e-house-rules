@@ -279,6 +279,7 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
 
   static #instance = null;
   static #actionIndex = null;
+  static #actActions = null;
 
   #target;
   #tab = "check";
@@ -310,11 +311,28 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
       .sort((a, b) => a.slug.localeCompare(b.slug));
     // Populate the datalist if the app is already rendered
     const list = this.#instance?.element?.querySelector("#phr-action-list");
-    if (list) list.innerHTML = this.#actionIndex.map((a) => `<option value="${a.slug}">${a.name}</option>`).join("");
+    if (list) list.innerHTML = this.#actionIndex.map((a) => `<option value="${a.slug}"></option>`).join("");
   }
 
   static get actionIndex() {
     return this.#actionIndex ?? [];
+  }
+
+  /** The actions actually supported by [[/act]]: the system's implemented
+   *  action macros (game.pf2e.actions), which is what the enricher resolves
+   *  against — NOT the full actions compendium. */
+  static get actActions() {
+    this.#actActions ??= [...(game.pf2e?.actions ?? [])]
+      .map((action) => ({
+        slug: action.slug,
+        name: game.i18n.localize(action.name),
+        variants: [...(action.variants ?? [])].map((v) => ({
+          slug: v.slug,
+          name: game.i18n.localize(v.name),
+        })),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return this.#actActions;
   }
 
   async _renderHTML() {
@@ -339,8 +357,16 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
       .map((t) => `<option value="${t}">${t}</option>`)
       .join("");
     const actionOptions = ExpressionInserter.actionIndex
+      .map((a) => `<option value="${a.slug}"></option>`)
+      .join("");
+    const actActionOptions = ExpressionInserter.actActions
       .map((a) => `<option value="${a.slug}">${a.name}</option>`)
       .join("");
+    const statisticOptions = [
+      `<option value="">— default —</option>`,
+      `<option value="perception">${game.i18n.localize("PF2E.PerceptionLabel")}</option>`,
+      ...stats.skills.map((s) => `<option value="${s.slug}">${s.label}</option>`),
+    ].join("");
     const lvl = partyLevel();
 
     return `
@@ -359,17 +385,17 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
           ${stats.skills.map((s) => chip(s, "skill")).join("")}
         </div>
         <div class="phr-row">
-          <label>Lore(s) <input type="text" name="lores" placeholder="e.g. Fishing Lore, Herbalism"></label>
+          <label class="phr-label-field">Lore(s) <input type="text" name="lores" placeholder="e.g. Fishing Lore, Herbalism"></label>
         </div>
         <fieldset class="phr-dc">
           <legend>DC</legend>
-          <div class="phr-row">
+          <div class="phr-row phr-dc-modes">
             <label class="phr-radio"><input type="radio" name="dcMode" value="level" checked> Level-based</label>
-            <label>Level <input type="number" name="level" value="${lvl}" min="-1" max="25" step="1" title="Defaults to party level"></label>
+            <input type="number" name="level" value="${lvl}" min="-1" max="25" step="1" data-dc-for="level" title="Defaults to party level">
             <label class="phr-radio"><input type="radio" name="dcMode" value="static"> Static</label>
-            <label><input type="number" name="staticDC" placeholder="DC" min="0" step="1"></label>
+            <input type="number" name="staticDC" placeholder="DC" min="0" step="1" data-dc-for="static" class="phr-dim">
             <label class="phr-radio"><input type="radio" name="dcMode" value="simple"> Simple</label>
-            <select name="simpleRank">
+            <select name="simpleRank" data-dc-for="simple" class="phr-dim">
               ${Object.keys(SIMPLE_DCS).map((r) => `<option value="${r}">${r.charAt(0).toUpperCase() + r.slice(1)} (${simpleDC(r)})</option>`).join("")}
             </select>
           </div>
@@ -446,15 +472,18 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
 
       <section class="phr-pane" data-pane="action" ${this.#tab !== "action" ? "hidden" : ""}>
         <div class="phr-row">
-          <label>Action <input type="text" name="act-action" list="phr-action-list" placeholder="e.g. administer-first-aid"></label>
-          <label>Variant <input type="text" name="act-variant" placeholder="e.g. stop-bleeding"></label>
+          <label>Action <select name="act-action">
+            <option value="">— choose an action —</option>
+            ${actActionOptions}
+          </select></label>
+          <label data-act-variant hidden>Variant <select name="act-variant"><option value=""></option></select></label>
         </div>
         <div class="phr-row">
-          <label>Statistic <input type="text" name="act-statistic" placeholder="e.g. thievery (optional)"></label>
-          <label>DC <input type="number" name="act-dc" min="0" step="1" placeholder="optional"></label>
+          <label>Statistic <select name="act-statistic">${statisticOptions}</select></label>
+          <label>DC <input type="number" name="act-dc" min="0" step="1" placeholder="auto"></label>
           <label>Adjustment <select name="act-adjustment">${adjustmentOptions}</select></label>
         </div>
-        <p class="hint">Rolls the action macro with full traits and degrees of success.</p>
+        <p class="hint">Rolls the full action macro with traits and degrees of success — only the system's implemented action macros are listed.</p>
       </section>
 
       <section class="phr-pane" data-pane="roll" ${this.#tab !== "roll" ? "hidden" : ""}>
@@ -469,6 +498,7 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
         <label class="phr-label-field">Link label <input type="text" name="label" placeholder="optional {display text}"></label>
       </div>
       <div class="phr-preview">
+        <span class="phr-preview-caption">Preview</span>
         <output data-preview></output>
         <span class="phr-preview-rendered" data-rendered></span>
       </div>
@@ -499,9 +529,92 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
 
   /* ------------------------------------------ */
 
+  #pendingRestore = null;
+
+  /** Re-render (e.g. after add/remove damage row) without losing what the
+   *  user has typed elsewhere in the form — a plain render() rebuilds the
+   *  DOM from scratch. Damage-row fields are carried by #damageRows. */
+  #rerenderPreservingForm(focusSelector = null) {
+    const form = this.element.querySelector("form.phr-body");
+    const state = { fields: {}, checks: {}, radios: {} };
+    for (const el of form.elements) {
+      if (!el.name || /^dmg-(formula|type|persistent|category)-\d+$/.test(el.name)) continue;
+      if (el.type === "checkbox") state.checks[`${el.name}::${el.value}`] = el.checked;
+      else if (el.type === "radio") {
+        if (el.checked) state.radios[el.name] = el.value;
+      } else state.fields[el.name] = el.value;
+    }
+    this.#pendingRestore = { state, focusSelector };
+    this.render();
+  }
+
+  #restoreFormState({ fields, checks, radios }) {
+    const form = this.element.querySelector("form.phr-body");
+    // act-action must land before variants are rebuilt and re-applied
+    for (const [name, value] of Object.entries(fields)) {
+      const el = form.elements.namedItem(name);
+      if (el && !(el instanceof RadioNodeList)) el.value = value;
+    }
+    for (const [key, checked] of Object.entries(checks)) {
+      const [name, value] = key.split("::");
+      const el = form.querySelector(`input[type=checkbox][name="${name}"][value="${value}"]`);
+      if (el) el.checked = checked;
+    }
+    for (const [name, value] of Object.entries(radios)) {
+      const el = form.querySelector(`input[name="${name}"][value="${value}"]`);
+      if (el) el.checked = true;
+    }
+    this.#updateVariantOptions();
+    const variant = form.elements.namedItem("act-variant");
+    if (variant && fields["act-variant"]) variant.value = fields["act-variant"];
+  }
+
+  /** Rebuild the variant dropdown for the selected [[/act]] action. */
+  #updateVariantOptions() {
+    const form = this.element.querySelector("form.phr-body");
+    const slug = form.elements.namedItem("act-action")?.value;
+    const wrap = form.querySelector("[data-act-variant]");
+    if (!wrap) return;
+    const select = wrap.querySelector("select");
+    const action = ExpressionInserter.actActions.find((a) => a.slug === slug);
+    const previous = select.value;
+    if (action?.variants.length) {
+      wrap.hidden = false;
+      select.innerHTML =
+        `<option value="">— none —</option>` +
+        action.variants.map((v) => `<option value="${v.slug}">${v.name}</option>`).join("");
+      if (action.variants.some((v) => v.slug === previous)) select.value = previous;
+    } else {
+      wrap.hidden = true;
+      select.innerHTML = `<option value=""></option>`;
+    }
+  }
+
+  /** Dim the DC-mode inputs that don't belong to the selected mode. */
+  #syncDcModeDim() {
+    const form = this.element.querySelector("form.phr-body");
+    const mode = form.querySelector("input[name=dcMode]:checked")?.value;
+    for (const el of form.querySelectorAll("[data-dc-for]")) {
+      el.classList.toggle("phr-dim", el.dataset.dcFor !== mode);
+    }
+  }
+
+  #syncConditionalVisibility() {
+    const form = this.element.querySelector("form.phr-body");
+    this.#syncDcModeDim();
+    this.#updateVariantOptions();
+    const shape = form.elements.namedItem("tpl-shape")?.value;
+    const lineOnly = form.querySelector("[data-line-only]");
+    if (lineOnly) lineOnly.hidden = shape !== "line";
+  }
+
   _onRender() {
     const html = this.element;
     const form = html.querySelector("form.phr-body");
+
+    const restore = this.#pendingRestore;
+    this.#pendingRestore = null;
+    if (restore) this.#restoreFormState(restore.state);
 
     for (const tabBtn of html.querySelectorAll(".phr-tab")) {
       tabBtn.addEventListener("click", () => this.#activateTab(tabBtn.dataset.tab));
@@ -512,10 +625,22 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
       // keep damage-row state so re-renders don't lose entries
       const rowEl = event.target.closest(".phr-damage-row");
       if (rowEl) this.#syncDamageRows();
-      if (event.target.name === "tpl-shape") {
-        html.querySelector("[data-line-only]").hidden = event.target.value !== "line";
+      if (event.target.name === "tpl-shape" || event.target.name === "act-action" || event.target.name === "dcMode") {
+        this.#syncConditionalVisibility();
       }
       this.#refreshPreview();
+    });
+
+    // Typing in a DC field selects that DC mode
+    form.querySelector(".phr-dc-modes")?.addEventListener("focusin", (event) => {
+      const mode = event.target.dataset?.dcFor;
+      if (!mode) return;
+      const radio = form.querySelector(`input[name=dcMode][value="${mode}"]`);
+      if (radio && !radio.checked) {
+        radio.checked = true;
+        this.#syncDcModeDim();
+        this.#refreshPreview();
+      }
     });
 
     form.addEventListener("submit", (event) => {
@@ -526,14 +651,14 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
     html.querySelector(".phr-add-row")?.addEventListener("click", () => {
       this.#syncDamageRows();
       this.#damageRows.push({ formula: "", type: "fire", persistent: false, category: "none" });
-      this.render();
+      this.#rerenderPreservingForm(`[name="dmg-formula-${this.#damageRows.length - 1}"]`);
     });
     form.addEventListener("click", (event) => {
       const remove = event.target.closest(".phr-remove-row");
       if (remove) {
         this.#syncDamageRows();
         this.#damageRows.splice(Number(remove.closest(".phr-damage-row").dataset.index), 1);
-        this.render();
+        this.#rerenderPreservingForm(".phr-add-row");
       }
       const btn = event.target.closest("[data-action-btn]");
       if (btn && btn.dataset.actionBtn !== "primary") {
@@ -542,9 +667,13 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
       }
     });
 
+    this.#syncConditionalVisibility();
     this.#refreshPreview();
-    // Focus the first meaningful field for keyboard flow
-    html.querySelector(this.#tab === "check" ? ".phr-chip input" : ".phr-pane:not([hidden]) input")?.focus();
+    // Focus: restored target after a re-render, else the first useful field
+    const focusTarget = restore?.focusSelector
+      ? html.querySelector(restore.focusSelector)
+      : html.querySelector(this.#tab === "check" ? ".phr-chip input" : ".phr-pane:not([hidden]) input, .phr-pane:not([hidden]) select");
+    focusTarget?.focus();
   }
 
   #activateTab(tab) {

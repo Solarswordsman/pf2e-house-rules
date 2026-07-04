@@ -17,29 +17,47 @@
 .phr-tab {
   flex: 0 0 auto;
   width: auto;
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.9rem;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   cursor: pointer;
   line-height: 1.5;
+  opacity: 0.8;
+}
+
+.phr-tab:hover {
+  opacity: 1;
 }
 
 .phr-tab.active {
   border-bottom-color: var(--color-warm-2, #c9593f);
   font-weight: bold;
+  opacity: 1;
 }
 
 .phr-body {
   display: flex;
   flex-direction: column;
+  gap: 0.625rem;
+}
+
+.phr-pane {
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+.phr-pane[hidden] {
+  display: none;
 }
 
 .phr-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  column-gap: 0.75rem;
+  row-gap: 0.45rem;
   align-items: center;
 }
 
@@ -107,10 +125,37 @@
 .phr-dc {
   border: 1px solid var(--color-border, #7a7971);
   border-radius: 4px;
-  padding: 0.35rem 0.5rem;
+  padding: 0.5rem 0.65rem 0.6rem;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
+}
+
+/* DC mode inputs sit beside their radios; inactive ones are dimmed and
+   activate their mode when focused. */
+.phr-dc-modes input[type="number"] {
+  width: 4.5rem;
+  flex: 0 0 auto;
+}
+
+.phr-dc-modes select {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.phr-dc-modes .phr-radio:not(:first-child) {
+  margin-left: 0.5rem;
+}
+
+.phr-dim {
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+
+.phr-dim:hover,
+.phr-dim:focus-within,
+.phr-dim:focus {
+  opacity: 0.8;
 }
 
 .phr-dc legend {
@@ -125,18 +170,45 @@
 .phr-computed {
   margin-left: auto;
   font-weight: bold;
-  opacity: 0.85;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--color-border, #7a7971);
+  border-radius: 3px;
+  white-space: nowrap;
 }
 
 .phr-advanced summary {
   cursor: pointer;
-  opacity: 0.8;
+  opacity: 0.75;
+  user-select: none;
+}
+
+.phr-advanced summary:hover {
+  opacity: 1;
 }
 
 .phr-advanced[open] {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
+  padding: 0.4rem 0 0.15rem 0.6rem;
+  border-left: 2px solid var(--color-border, #7a7971);
+}
+
+.phr-advanced[open] summary {
+  margin-left: -0.6rem;
+  padding-left: 0.6rem;
+}
+
+.phr-advanced .phr-row > label {
+  flex: 1 1 auto;
+}
+
+.phr-advanced .phr-row > label:has(input[type="text"]) {
+  flex: 1 1 14rem;
+}
+
+.phr-advanced .phr-row input[type="text"] {
+  flex: 1;
 }
 
 .phr-damage-rows {
@@ -163,11 +235,18 @@
 .phr-preview {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.4rem 0.5rem;
+  gap: 0.3rem;
+  padding: 0.45rem 0.6rem 0.5rem;
   border: 1px dashed var(--color-border, #7a7971);
   border-radius: 4px;
   min-height: 2.4rem;
+}
+
+.phr-preview-caption {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
 }
 
 .phr-preview output {
@@ -175,6 +254,11 @@
   font-size: var(--font-size-12, 0.8rem);
   word-break: break-all;
   user-select: all;
+}
+
+/* The enriched preview is for eyeballing only — don't let clicks roll it. */
+.phr-preview-rendered {
+  pointer-events: none;
 }
 
 .phr-buttons {

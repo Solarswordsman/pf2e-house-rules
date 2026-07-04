@@ -21,6 +21,7 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - Prefer hooking public APIs and document flags over copying module internals.
 - Mind setting **scope**: `user` settings are per-player; `world`/`client` differ. Per-user features must load on every client.
 - Dev loop: edit a script → F5 in-game; edit the manifest → restart the server. Enable the module for the world.
+- Git commit attribution trailer: `Agentic - With Claude <ModelName> <MajorVersion>` — e.g. `Agentic - With Claude Fable 5` (human-readable model name + major version, never the raw model ID).
 
 ## Current tweaks — load-bearing facts
 
