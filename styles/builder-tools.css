@@ -1,0 +1,228 @@
+/* Shared styles for the builder tools:
+   expressions-inserter, hazard-builder, infiltration-builder. */
+
+/* ---------- Expression Inserter ---------- */
+
+.phr-inserter .window-content {
+  padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.phr-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border, #7a7971);
+}
+
+.phr-tab {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 0.25rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.phr-tab.active {
+  border-bottom-color: var(--color-warm-2, #c9593f);
+  font-weight: bold;
+}
+
+.phr-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.phr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.phr-row > label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.phr-row input[type="text"] {
+  min-width: 8rem;
+}
+
+.phr-row input[type="number"] {
+  width: 5rem;
+}
+
+.phr-label-field {
+  flex: 1;
+}
+
+.phr-label-field input {
+  flex: 1;
+}
+
+.phr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.phr-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--color-border, #7a7971);
+  border-radius: 1rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--font-size-13, 0.85rem);
+}
+
+.phr-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.phr-chip:has(input:checked) {
+  background: var(--color-warm-2, #c9593f);
+  color: #fff;
+  border-color: var(--color-warm-2, #c9593f);
+}
+
+.phr-chip:has(input:focus-visible) {
+  outline: 2px solid var(--color-warm-2, #c9593f);
+  outline-offset: 1px;
+}
+
+.phr-chip[data-group="save"] {
+  border-style: dashed;
+}
+
+.phr-dc {
+  border: 1px solid var(--color-border, #7a7971);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.phr-dc legend {
+  padding: 0 0.25rem;
+  font-weight: bold;
+}
+
+.phr-radio {
+  font-weight: bold;
+}
+
+.phr-computed {
+  margin-left: auto;
+  font-weight: bold;
+  opacity: 0.85;
+}
+
+.phr-advanced summary {
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.phr-advanced[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.phr-damage-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.phr-damage-row input[type="text"] {
+  flex: 1;
+  min-width: 6rem;
+}
+
+.phr-damage-row select {
+  width: auto;
+}
+
+.phr-remove-row,
+.phr-add-row {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.phr-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px dashed var(--color-border, #7a7971);
+  border-radius: 4px;
+  min-height: 2.4rem;
+}
+
+.phr-preview output {
+  font-family: var(--font-monospace, monospace);
+  font-size: var(--font-size-12, 0.8rem);
+  word-break: break-all;
+  user-select: all;
+}
+
+.phr-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.phr-buttons button {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.phr-primary {
+  font-weight: bold;
+}
+
+/* ---------- Hazard / Infiltration builders ---------- */
+
+.phr-hazard .window-content,
+.phr-infiltration .window-content {
+  padding: 0.5rem 0.75rem 0.75rem;
+  overflow-y: auto;
+}
+
+.phr-obstacle {
+  border-left: 3px solid var(--color-border, #7a7971);
+  padding-left: 0.5rem;
+  margin: 0.35rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.phr-check-row select {
+  width: auto;
+  max-width: 16rem;
+}
+
+.phr-check-row button,
+.phr-obstacle button {
+  width: auto;
+  flex: 0 0 auto;
+  line-height: 1.2;
+}
+
+.phr-body > button,
+fieldset.phr-dc > button {
+  width: auto;
+  align-self: flex-start;
+}

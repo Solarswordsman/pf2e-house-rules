@@ -38,6 +38,21 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - Metamorphic markup vocabulary (extracted from the real Season of Ghosts packs): `p.read-aloud`; `section.encounter > div.header > (img + h2.split.no-toc > span.keepme×2 + span.link)` — the second `keepme` span is the right-aligned severity; `aside.sidebar` / `aside.float-right`; `section.action` + `ul.traits > li.trait`; `section.advancement-track` with `span.level`; utility classes `no-toc`, `no-indent`, `split`, `keepme`, `float-left/right`. Their CSS is tag-sensitive (`aside.sidebar`, not `.sidebar`) and scoped to their sheet's wrapper class (e.g. `.seasonofghosts-wrapper`), which is why the editor shows nothing — our CSS adds neutral editor-only affordances, all scoped under `.ProseMirror`.
 - `reference/` holds the Season of Ghosts basis pack + first AP for inspection; it is not shipped (the release zip packs only `scripts`/`styles`). Journal HTML lives inside LevelDB packs: read with `classic-level` on a **copy** of the pack dir (never the original — opening takes the LOCK); documents sit at `adventure.journal[].pages[].text.content`.
 
+**`scripts/expressions-inserter.js`** — dialog for building inline `@Check`/`@Damage`/`@Template`/`[[/act]]`/`[[/r]]` expressions.
+- Param surface verified against system source `src/module/system/text-editor.ts` (`#createCheck`/`#createDamageRoll`): type lists are comma-joined, numeric adjustments get baked into `dc:`, `against:`/`defense:` excludes `dc:`. DC tables mirror `src/module/dc.ts` (PWOL-aware) and are embedded as data.
+- Foundry keybindings **don't fire while a text field/editor has focus**, so the in-editor hotkey is a capture-phase `keydown` listener; the registered keybinding covers the out-of-editor (clipboard) case. No double-fire possible.
+- EditorViews are captured from `menu.view` in `getProseMirrorMenuDropDowns` (WeakMap keyed on `view.dom`) — there's no reliable public path from a `.ProseMirror` DOM node back to its view. Insertion is `view.state.tr.insertText(...)`; enrichers run on render, so plain text is correct.
+- Exports `levelBasedDC`/`partyLevel` etc.; `infiltration-builder.js` imports them (relative ESM imports work between `esmodules` entries).
+- AppV2 gotcha (applies to all three builders): `this.element` persists across re-renders — attach delegated listeners to elements *inside* the re-rendered content (the `form`), never to `this.element`, or they stack.
+
+**`scripts/hazard-builder.js`** — GM Core "Building Hazards" tables 2-13…2-16 embedded; creates a Hazard actor.
+- Schema verified against `packs/pf2e/hazards`: `attributes.stealth.value` is the **modifier** (DC − 10) for simple *and* complex hazards; min-proficiency rank goes in `stealth.details`. `disable`/`routine`/`reset` are HTML under `system.details`. Strikes are `melee` items (`bonus.value`, `damageRolls` record keyed by random id); trigger/effect is an `action` item with `actionType.value: "reaction"`. `hasHealth: false` suppresses AC/saves/HP.
+- `fa.*` is a pf2e-internal alias, not a Foundry global — use `foundry.applications.ux.FormDataExtended` etc.
+
+**`scripts/infiltration-builder.js`** — GM Core Infiltration subsystem → multi-page journal entry.
+- Rules basis: crit/success = 2/1 IP, fail/crit-fail = 1/2 AP, +1 AP per round; failure ceiling 2× total IP with thresholds at ~25/50/75/100%. Standard/hard/very-hard DCs = level-based DC +0/+2/+5.
+- Preparation-activity compendium IDs were lifted from the system's GM-screen journal pack (`pf2e.actionspf2e`). Condition links resolve IDs at runtime from the `pf2e.conditionitems` index (name match), falling back to plain text.
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.
