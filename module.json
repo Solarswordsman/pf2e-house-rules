@@ -7,10 +7,14 @@
   "esmodules": [
     "scripts/toolbelt-set-targets.js",
     "scripts/pf2e-hud-slots.js",
-    "scripts/ap-journal-styles.js"
+    "scripts/ap-journal-styles.js",
+    "scripts/expressions-inserter.js",
+    "scripts/hazard-builder.js",
+    "scripts/infiltration-builder.js"
   ],
   "styles": [
-    "styles/ap-journal-styles.css"
+    "styles/ap-journal-styles.css",
+    "styles/builder-tools.css"
   ],
   "socket": true,
   "authors": [{ "name": "Jeff Lamb" }],
