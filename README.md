@@ -21,7 +21,8 @@ pf2e-house-rules/
 │   └── infiltration-builder.js
 └── styles/
     ├── ap-journal-styles.css
-    └── builder-tools.css
+    ├── builder-tools.css
+    └── sog-journal-header.css
 ```
 
 ## Install
@@ -94,6 +95,12 @@ Interactive builder for **GM Core Infiltration subsystem** challenges — or any
 - **Use:** click **Build Infiltration** in the Journal directory footer (GM only). Add objectives; under each, add obstacles with one or more skill/save options (each at standard / hard / very hard DCs computed from the party level), Infiltration Point costs (group or per-PC), and failure consequences (free text, damage, and/or a condition). Add complications and opportunities, optionally include the standard preparation activities (Edge Points), and create.
 - **Output:** a multi-page journal entry — overview with the point economy and an **Awareness Point threshold table** (failure at 2× total IP, per GM Core), one page per objective with live `@Check`/`@Damage` buttons, complications & opportunities, and preparation activities linked to the system compendium. It's all plain journal text afterward, so edit freely.
 - **Requires:** the PF2e system, GM role.
+
+### 7. Season of Ghosts journal header — `styles/sog-journal-header.css`
+
+CSS-only restyle of the Metamorphic **Season of Ghosts** journal windows. Their v14 build split the terra-cotta tile strip out of the titlebar into a decorative frame floating above the drag handle and window controls. This puts the tiles back as the header background and removes the floating top strip (the candle ledge along the bottom is kept).
+
+- **Requires:** the `pf2e-ap196-199-season-of-ghosts` basis pack (selectors are inert without it).
 
 ## Development
 

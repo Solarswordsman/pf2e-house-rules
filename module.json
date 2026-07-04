@@ -2,7 +2,7 @@
   "id": "pf2e-house-rules",
   "title": "PF2e House Rules",
   "description": "A small collection of personal Foundry/PF2e tweaks for our home game.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "compatibility": { "minimum": "14", "verified": "14" },
   "esmodules": [
     "scripts/toolbelt-set-targets.js",
@@ -14,7 +14,8 @@
   ],
   "styles": [
     "styles/ap-journal-styles.css",
-    "styles/builder-tools.css"
+    "styles/builder-tools.css",
+    "styles/sog-journal-header.css"
   ],
   "socket": true,
   "authors": [{ "name": "Jeff Lamb" }],

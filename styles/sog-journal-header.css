@@ -1,0 +1,34 @@
+/* Season of Ghosts journal header restyle.
+ *
+ * The v14 basis pack draws its terra-cotta tile strip as a decorative
+ * ::after frame floating *above* the window header (their 14.0.0 change:
+ * "Top window header bar no longer clips out of the view port"), leaving a
+ * plain teal gradient as the actual titlebar. We put the tiles back inside
+ * the header instead, and suppress the floating top edge of the frame so
+ * nothing hovers over the drag handle and window controls. The candle
+ * ledge along the bottom edge of the frame is kept.
+ *
+ * app-border.webp is 1311x138 with the tile strip in the top 42px, so
+ * scaling the image to 138/42 = 328.6% of the header height makes the tile
+ * slice exactly fill the header; the rest is clipped. The teal gradient is
+ * kept as a lower layer behind any transparent pixels in the slice.
+ *
+ * Selectors only match the basis pack's own sheet classes, so this file is
+ * inert when that module is absent. One class is repeated to out-rank the
+ * basis pack's rules regardless of stylesheet load order.
+ */
+
+.journal-sheet.seasonofghosts-wrapper.seasonofghosts-wrapper:not(.minimized) .window-header {
+  background:
+    url("modules/pf2e-ap196-199-season-of-ghosts/assets/layout/app-border.webp") top left / auto 328.6% repeat-x,
+    linear-gradient(#003438 0%, #004247, 70%, #003438 100%);
+}
+
+.journal-sheet.seasonofghosts-wrapper.seasonofghosts-wrapper:not(.minimized)::after {
+  border-top-width: 0;
+  border-image-width: 0 0 48px;
+  /* original frame: top -17px, height 100% + 39px; keep the bottom edge
+     at 100% + 22px while pulling the (now empty) top region into bounds */
+  top: 0;
+  height: calc(100% + 22px);
+}
