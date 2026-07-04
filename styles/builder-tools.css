@@ -256,11 +256,6 @@
   user-select: all;
 }
 
-/* The enriched preview is for eyeballing only — don't let clicks roll it. */
-.phr-preview-rendered {
-  pointer-events: none;
-}
-
 .phr-buttons {
   display: flex;
   gap: 0.5rem;
