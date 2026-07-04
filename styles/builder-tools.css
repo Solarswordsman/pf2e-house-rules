@@ -191,3 +191,38 @@
 .phr-primary {
   font-weight: bold;
 }
+
+/* ---------- Hazard / Infiltration builders ---------- */
+
+.phr-hazard .window-content,
+.phr-infiltration .window-content {
+  padding: 0.5rem 0.75rem 0.75rem;
+  overflow-y: auto;
+}
+
+.phr-obstacle {
+  border-left: 3px solid var(--color-border, #7a7971);
+  padding-left: 0.5rem;
+  margin: 0.35rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.phr-check-row select {
+  width: auto;
+  max-width: 16rem;
+}
+
+.phr-check-row button,
+.phr-obstacle button {
+  width: auto;
+  flex: 0 0 auto;
+  line-height: 1.2;
+}
+
+.phr-body > button,
+fieldset.phr-dc > button {
+  width: auto;
+  align-self: flex-start;
+}

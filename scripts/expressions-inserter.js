@@ -528,7 +528,7 @@ class ExpressionInserter extends foundry.applications.api.ApplicationV2 {
       this.#damageRows.push({ formula: "", type: "fire", persistent: false, category: "none" });
       this.render();
     });
-    html.addEventListener("click", (event) => {
+    form.addEventListener("click", (event) => {
       const remove = event.target.closest(".phr-remove-row");
       if (remove) {
         this.#syncDamageRows();
