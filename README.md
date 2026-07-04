@@ -15,9 +15,13 @@ pf2e-house-rules/
 ├── scripts/
 │   ├── toolbelt-set-targets.js
 │   ├── pf2e-hud-slots.js
-│   └── ap-journal-styles.js
+│   ├── ap-journal-styles.js
+│   ├── expressions-inserter.js
+│   ├── hazard-builder.js
+│   └── infiltration-builder.js
 └── styles/
-    └── ap-journal-styles.css
+    ├── ap-journal-styles.css
+    └── builder-tools.css
 ```
 
 ## Install
@@ -64,6 +68,32 @@ Makes it practical to author the rich journal blocks used by the Metamorphic/Pai
 - **Requires:** nothing. The blocks only *render* with AP styling inside a Metamorphic AP module's journal sheet, but authoring the markup works anywhere, and the editor shows each block with a neutral outline + label so the structure is visible while editing.
 
 **Why it's built this way:** the AP modules style plain classed HTML (`<p class="read-aloud">`, `<section class="encounter">`, …), scoped to their own journal sheet, so the editor shows none of it. This tweak plugs into the same `getProseMirrorMenuDropDowns` hook the PF2e system uses for its own styles. Classes are written into the node's `_preserve` attribute — Foundry's attribute-capture channel — because a plain `class` attribute would be stripped by the ProseMirror schema on save. Scaffolds are parsed through Foundry's own schema so they round-trip identically to hand-written markup. The CSS is scoped entirely under `.ProseMirror`, so journal view mode is untouched.
+
+### 4. PF2e Expressions Inserter — `scripts/expressions-inserter.js`
+
+Quick-Insert-style dialog that builds PF2e inline expressions — `@Check[...]`, `@Damage[...]`, `@Template[...]`, `[[/act ...]]`, `[[/r ...]]` — so you never have to remember the syntax.
+
+- **Use:** press **Ctrl+Shift+K** (rebindable in *Configure Controls*) or use **Format ▾ → PF2e Expression…** in any rich-text editor. Pick a tab (Check / Damage / Template / Action / Roll), click options, watch the live preview (both the raw string and the rendered roll button), then **Insert**. If a ProseMirror editor was focused the expression lands at the cursor; otherwise it's copied to the clipboard. You can also send any expression straight to chat.
+- **Checks:** statistics are clickable chips (Perception, saves, all skills, flat checks, plus free-text lores). The DC defaults to the **level-based DC for the current party level** and can be switched to a static number or a simple DC, with easy/hard adjustments — all still editable by hand. Advanced options cover `basic`, `secret`, action traits (with autocomplete from the system's actions compendium), `against:` defenses, `showDC`, `immutable`, and more.
+- **Requires:** the PF2e system (quietly no-ops elsewhere).
+
+**Why it's built this way:** the parameter surface was verified against the system's inline enricher (`text-editor.ts`) rather than the wiki, and the DC math mirrors the system's `dc.ts` (including Proficiency Without Level). Foundry keybindings don't fire while a text editor has focus, so a capture-phase key listener handles the hotkey inside ProseMirror; editor views are captured from the same menu hook the AP styles tweak uses.
+
+### 5. Hazard Builder — `scripts/hazard-builder.js`
+
+Builds a complete, ready-to-play **Hazard actor** instead of an empty shell, using the GM Core "Building Hazards" tables.
+
+- **Use:** click **Build Hazard** in the Actors directory footer (GM only). Pick a level (defaults to party level), simple or complex, then a role — extreme / high / low — for each statistic (Stealth, Disable, AC, saves). Attack bonus, damage expression, and save DCs are pre-filled from the tables for the chosen level and complexity; every number stays editable before you hit create. Choose a Strike or a save-vs-damage effect, fill in trigger/description/reset (and a routine for complex hazards), and the finished actor opens for normal sheet editing.
+- **Output details:** the disable line and the trigger/effect reaction come with working inline `@Check`/`@Damage` buttons; Stealth stores the modifier with the minimum-proficiency rank annotated, exactly like published hazards.
+- **Requires:** the PF2e system, GM role.
+
+### 6. Infiltration Builder — `scripts/infiltration-builder.js`
+
+Interactive builder for **GM Core Infiltration subsystem** challenges — or anything infiltration-shaped (multi-phase skill challenges with escalating tension).
+
+- **Use:** click **Build Infiltration** in the Journal directory footer (GM only). Add objectives; under each, add obstacles with one or more skill/save options (each at standard / hard / very hard DCs computed from the party level), Infiltration Point costs (group or per-PC), and failure consequences (free text, damage, and/or a condition). Add complications and opportunities, optionally include the standard preparation activities (Edge Points), and create.
+- **Output:** a multi-page journal entry — overview with the point economy and an **Awareness Point threshold table** (failure at 2× total IP, per GM Core), one page per objective with live `@Check`/`@Damage` buttons, complications & opportunities, and preparation activities linked to the system compendium. It's all plain journal text afterward, so edit freely.
+- **Requires:** the PF2e system, GM role.
 
 ## Development
 
