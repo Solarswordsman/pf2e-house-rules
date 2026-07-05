@@ -54,6 +54,11 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - Rules basis: crit/success = 2/1 IP, fail/crit-fail = 1/2 AP, +1 AP per round; failure ceiling 2× total IP with thresholds at ~25/50/75/100%. Standard/hard/very-hard DCs = level-based DC +0/+2/+5.
 - Preparation-activity compendium IDs were lifted from the system's GM-screen journal pack (`pf2e.actionspf2e`). Condition links resolve IDs at runtime from the `pf2e.conditionitems` index (name match), falling back to plain text.
 
+**`scripts/crafting-formula-search.js`** (+ `styles/crafting-formula-search.css`) — search bar filtering the Crafting tab's Known Formulas list.
+- Hook is `renderCharacterSheetPF2e`; the sheet is still AppV1 on pf2e master, so `html` may be jQuery — normalize (`html instanceof HTMLElement ? html : html[0]`) before querying.
+- DOM contract (system `tabs/crafting.hbs`): `section.known-formulas > header + ol.formula-list`; rows are `li.formula-item[data-formula-lvl]` with the name in `h4.name`, level headers `li.formula-level-header[data-level]`. Headers hide when no row of their level matches.
+- The sheet re-renders wholesale on any actor update, wiping the input — the query is kept in a `WeakMap` keyed by sheet instance and re-applied each render. The system's own inventory search uses Foundry's `SearchFilter` + MiniSearch; a substring filter is deliberate simplification.
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.

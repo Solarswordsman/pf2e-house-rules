@@ -18,10 +18,12 @@ pf2e-house-rules/
 │   ├── ap-journal-styles.js
 │   ├── expressions-inserter.js
 │   ├── hazard-builder.js
-│   └── infiltration-builder.js
+│   ├── infiltration-builder.js
+│   └── crafting-formula-search.js
 └── styles/
     ├── ap-journal-styles.css
     ├── builder-tools.css
+    ├── crafting-formula-search.css
     └── sog-journal-header.css
 ```
 
@@ -101,6 +103,13 @@ Interactive builder for **GM Core Infiltration subsystem** challenges — or any
 CSS-only restyle of the Metamorphic **Season of Ghosts** journal windows. Their v14 build split the terra-cotta tile strip out of the titlebar into a decorative frame floating above the drag handle and window controls. This puts the tiles back as the header background and removes the floating top strip (the candle ledge along the bottom is kept).
 
 - **Requires:** the `pf2e-ap196-199-season-of-ghosts` basis pack (selectors are inert without it).
+
+### 8. Crafting Formula Search — `scripts/crafting-formula-search.js` + `styles/crafting-formula-search.css`
+
+Adds a search bar to the character sheet's **Crafting** tab, mirroring the one on the Inventory tab, so you can find a formula (say, *Elixir of Life*) buried in a long Known Formulas list.
+
+- **Use:** open the Crafting tab and type in the search field above the Known Formulas list. Formula rows filter live by name (case-insensitive substring); level headers with no matching formulas hide too. The query survives sheet re-renders (crafting an item, adjusting quantities, etc.).
+- **Requires:** the PF2e system. Per-user and purely client-side — no data is changed.
 
 ## Development
 

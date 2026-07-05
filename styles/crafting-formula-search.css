@@ -1,0 +1,11 @@
+/* Crafting tab formula search bar (scripts/crafting-formula-search.js).
+   Mirrors the Inventory tab's .inventory-header .search look. */
+
+.crafting-pane section.known-formulas .hr-formula-search {
+  padding: 0.25rem 0.5rem;
+}
+
+.crafting-pane section.known-formulas .hr-formula-search input[type="search"] {
+  width: 100%;
+  height: 1.75em;
+}
