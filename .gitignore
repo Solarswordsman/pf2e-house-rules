@@ -1,3 +1,4 @@
 .claude/
 reference/
 iteration/
+deployForTest.sh
