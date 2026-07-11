@@ -59,6 +59,11 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - DOM contract (system `tabs/crafting.hbs`): `section.known-formulas > header + ol.formula-list`; rows are `li.formula-item[data-formula-lvl]` with the name in `h4.name`, level headers `li.formula-level-header[data-level]`. Headers hide when no row of their level matches.
 - The sheet re-renders wholesale on any actor update, wiping the input — the query is kept in a `WeakMap` keyed by sheet instance and re-applied each render. The system's own inventory search uses Foundry's `SearchFilter` + MiniSearch; a substring filter is deliberate simplification.
 
+**`scripts/compendium-browser-filters.js`** — extra Compendium Browser filters (Equipment: Other Tags + Usage; Feats: Dedication prerequisite).
+- The v14 browser filters generically: each result carries an `options: Set<"prefix:value">`, `buildPredicate()` iterates **all** of `filterData.checkboxes` (predicate prefix is `optionPrefix ?? groupKey`), and the Svelte sidebar renders every checkbox group it finds — injected groups need zero UI/filter plumbing.
+- Integration point: wrap each tab instance's `loadData` (instances at `game.pf2e.compendiumBrowser.tabs.*`, created in the system's `ready` hook, which runs before module `ready` hooks). Enrichment must happen inside the wrapper: `init()` builds the MiniSearch engine (its `storeFields` already include `options`) and snapshots `defaultFilterData` *after* `loadData`, so text search and filter reset pick up the additions for free.
+- Extra data is a supplemental `pack.getIndex({fields})` pass over `browser.loadedPacks(tabName)`, merged by UUID: `system.traits.otherTags`, `system.usage.value` (empty string = carried; kits have no usage), `system.prerequisites.value` (free text; dedications extracted via `/([A-Z][^,;.()]*?)\s+Dedication\b/`). Labels from `CONFIG.PF2E.usages` and `CONFIG.PF2E.other{Armor,Consumable,Weapon}Tags`, falling back to title-cased slug.
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.

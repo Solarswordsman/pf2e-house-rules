@@ -111,6 +111,19 @@ Adds a search bar to the character sheet's **Crafting** tab, mirroring the one o
 - **Use:** open the Crafting tab and type in the search field above the Known Formulas list. Formula rows filter live by name (case-insensitive substring); level headers with no matching formulas hide too. The query survives sheet re-renders (crafting an item, adjusting quantities, etc.).
 - **Requires:** the PF2e system. Per-user and purely client-side — no data is changed.
 
+### 9. Compendium Browser extra filters — `scripts/compendium-browser-filters.js`
+
+Adds three filter groups to the PF2e **Compendium Browser** that the system doesn't expose:
+
+- **Equipment → Other Tags** — filter by `system.traits.otherTags` (e.g. *Alchemical Food*, *Alchemical Tool*, *Herbal*).
+- **Equipment → Usage** — filter by where an item is used/equipped (*Worn*, *Worn Shoes*, *Held in One Hand*, *Attached to a Weapon*, …).
+- **Feats → Dedication** — filter archetype feats by their prerequisite "*X* Dedication" feat (e.g. all *Blessed One* or *Soulforger* feats); the dedication feat itself is included in its group.
+
+No separate index is maintained: after the system's own loader runs, a supplemental compendium-index pass fetches the extra fields, merges filter tokens into each entry, and injects checkbox groups (options collected from the actual data, so only tags/usages/dedications that exist appear). Multiple selections within a group are OR'd, matching system filter behavior.
+
+- **Use:** open the Compendium Browser's Equipment or Feats tab; the new groups appear in the filter sidebar below the system's own.
+- **Requires:** the PF2e system (fails safe with a console warning if the browser isn't found).
+
 ## Development
 
 - Both scripts guard for their dependency and quietly no-op if it isn't installed, so the module is safe to run with either, both, or neither present.
