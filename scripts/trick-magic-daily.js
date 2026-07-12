@@ -228,8 +228,9 @@ function createTrickDaily(api) {
 }
 
 Hooks.once("ready", () => {
-  const module = game.modules.get("pf2e-dailies");
-  const api = module?.active ? module.api : null;
+  // reonZ modules expose their API at game.<id minus "pf2e-", camelCased>.api
+  // (same pattern as game.toolbelt.api), NOT on the module object.
+  const api = game.dailies?.active ? game.dailies.api : null;
   if (!api?.registerCustomDailies || !api.utils?.createSpellcastingEntrySource) return;
   api.registerCustomDailies([createTrickDaily(api)]);
 });
