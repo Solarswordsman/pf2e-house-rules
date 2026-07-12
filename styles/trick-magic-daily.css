@@ -1,0 +1,6 @@
+/* Marker on inventory rows for items Tricked via the daily-preparations house rule. */
+i.phr-tricked-marker {
+  margin-left: 0.3em;
+  font-size: 0.85em;
+  color: var(--color-pf-alternate, #b447c5);
+}

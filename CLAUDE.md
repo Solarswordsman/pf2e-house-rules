@@ -21,7 +21,7 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - Prefer hooking public APIs and document flags over copying module internals.
 - Mind setting **scope**: `user` settings are per-player; `world`/`client` differ. Per-user features must load on every client.
 - Dev loop: edit a script → F5 in-game; edit the manifest → restart the server. Enable the module for the world.
-- Git commit attribution trailer: `Agentic - With Claude <ModelName> <MajorVersion>` — e.g. `Agentic - With Claude Fable 5` (human-readable model name + major version, never the raw model ID).
+- Git commit attribution trailer: `Agentic - Using Claude <ModelName> <MajorVersion>` — e.g. `Agentic - Using Claude Fable 5` (human-readable model name + major version, never the raw model ID). Also configured in `.claude/settings.json` under `attribution`.
 
 ## Current tweaks — load-bearing facts
 
@@ -63,6 +63,12 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - The v14 browser filters generically: each result carries an `options: Set<"prefix:value">`, `buildPredicate()` iterates **all** of `filterData.checkboxes` (predicate prefix is `optionPrefix ?? groupKey`), and the Svelte sidebar renders every checkbox group it finds — injected groups need zero UI/filter plumbing.
 - Integration point: wrap each tab instance's `loadData` (instances at `game.pf2e.compendiumBrowser.tabs.*`, created in the system's `ready` hook, which runs before module `ready` hooks). Enrichment must happen inside the wrapper: `init()` builds the MiniSearch engine (its `storeFields` already include `options`) and snapshots `defaultFilterData` *after* `loadData`, so text search and filter reset pick up the additions for free.
 - Extra data is a supplemental `pack.getIndex({fields})` pass over `browser.loadedPacks(tabName)`, merged by UUID: `system.traits.otherTags`, `system.usage.value` (empty string = carried; kits have no usage), `system.prerequisites.value` (free text; dedications extracted via `/([A-Z][^,;.()]*?)\s+Dedication\b/`). Labels from `CONFIG.PF2E.usages` and `CONFIG.PF2E.other{Armor,Consumable,Weapon}Tags`, falling back to title-cased slug.
+
+**`scripts/trick-magic-daily.js`** (+ `styles/trick-magic-daily.css`) — house rule: Trick Magic Item during daily preparations, tricked items work check-free until the next prep.
+- Registered as a pf2e-dailies custom daily on `ready` (`game.modules.get("pf2e-dailies").api.registerCustomDailies`); condition-based (feat slug `trick-magic-item` + ≥1 trickable item), so no compendium UUIDs involved. Row slugs are item ids; `save: true` persists skill picks; `empty: true` = skip.
+- "Trickable" mirrors the system gate in `consumable/document.ts`: category wand/scroll/spell-gem with `system.spell` that fails `actor.spellcasting.canCastConsumable`. Skills/DC mirror `calculateTrickMagicItemCheckDC` (tradition traits → skill, level-based DC; reuses `levelBasedDC` from `expressions-inserter.js` + a world-setting adjustment).
+- Success mechanism: `canCastConsumable` passes if any **prepared/spontaneous** entry `canCast` the spell (innate is explicitly excluded when an origin item is involved; match is `tradition || spell in list`). So success adds a temp 0-slot **spontaneous** entry (`proficiencySlug` = the skill) + spell copies wired in via the `flags.pf2e-dailies.identifier` mechanism (same as its Staves daily). dailies auto-deletes temp items at next rest; our `rest` callback clears `flags.pf2e-house-rules.tricked` on items. `process` wipes stale entries/flags first, so re-prepping never stacks.
+- Known leak (documented in README): while an entry exists, *any* consumable of that tradition casts check-free — the system gates per entry, not per item. Strict per-item gating would need an empty-tradition entry (match falls through to spell-list slug) — untested, revisit if needed.
 
 ## Adding a tweak
 

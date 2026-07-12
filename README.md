@@ -19,12 +19,15 @@ pf2e-house-rules/
 │   ├── expressions-inserter.js
 │   ├── hazard-builder.js
 │   ├── infiltration-builder.js
-│   └── crafting-formula-search.js
+│   ├── crafting-formula-search.js
+│   ├── compendium-browser-filters.js
+│   └── trick-magic-daily.js
 └── styles/
     ├── ap-journal-styles.css
     ├── builder-tools.css
     ├── crafting-formula-search.css
-    └── sog-journal-header.css
+    ├── sog-journal-header.css
+    └── trick-magic-daily.css
 ```
 
 ## Install
@@ -123,6 +126,21 @@ No separate index is maintained: after the system's own loader runs, a supplemen
 
 - **Use:** open the Compendium Browser's Equipment or Feats tab; the new groups appear in the filter sidebar below the system's own.
 - **Requires:** the PF2e system (fails safe with a console warning if the browser isn't found).
+
+### 10. Trick Magic Item daily — `scripts/trick-magic-daily.js` + `styles/trick-magic-daily.css`
+
+House rule: instead of Tricking a magic item as an action every time you activate it, characters with **Trick Magic Item** Trick their items once during **daily preparations**; a success makes the item usable check-free until the next daily preparations.
+
+Adds a "Trick Magic Item" section to pf2e-dailies' **Prepare Dailies** window (the coffee-mug button) listing every trickable item on the character — wands, scrolls, and spell gems with an embedded spell they can't already cast. Pick a skill per item (or leave blank to skip); on confirm each check rolls to chat against the item's level-based DC. Successes get:
+
+- a temporary **Tricked Items (Skill)** spellcasting entry (spell DC from the chosen skill) that lets the item's use button cast directly — no popup, no check. Removed automatically at the next rest/preparations.
+- a wand-sparkles marker on the item's inventory row.
+
+Skill picks are remembered between days. Failures simply aren't Tricked today.
+
+- **Settings (world):** master toggle, a DC adjustment dropdown (standard adjustments, −10…+10), and per-category toggles for wands / scrolls / spell gems.
+- **Requires:** the PF2e system and **pf2e-dailies** (quietly no-ops without it).
+- **Known leak:** while a Tricked entry exists, other consumables of the *same tradition* also cast without a check (the system gates item activation per spellcasting entry, not per item). Acceptable at our table; revisit if abused.
 
 ## Development
 
