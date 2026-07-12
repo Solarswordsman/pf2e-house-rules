@@ -2,7 +2,7 @@
   "id": "pf2e-house-rules",
   "title": "PF2e House Rules",
   "description": "A small collection of personal Foundry/PF2e tweaks for our home game.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "compatibility": { "minimum": "14", "verified": "14" },
   "esmodules": [
     "scripts/toolbelt-set-targets.js",
@@ -13,7 +13,8 @@
     "scripts/infiltration-builder.js",
     "scripts/crafting-formula-search.js",
     "scripts/compendium-browser-filters.js",
-    "scripts/trick-magic-daily.js"
+    "scripts/trick-magic-daily.js",
+    "scripts/region-teleport-follow.js"
   ],
   "styles": [
     "styles/ap-journal-styles.css",

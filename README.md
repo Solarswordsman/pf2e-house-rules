@@ -142,6 +142,13 @@ Skill picks are remembered between days. Failures simply aren't Tricked today.
 - **Requires:** the PF2e system and **pf2e-dailies** (quietly no-ops without it).
 - **Known leak:** while a Tricked entry exists, other consumables of the *same tradition* also cast without a check (the system gates item activation per spellcasting entry, not per item). Acceptable at our table; revisit if abused.
 
+### 11. Region Teleport Follow — `scripts/region-teleport-follow.js`
+
+GM navigation aid: press **J** on a region with a **Teleport Token** behavior to "follow" the teleport yourself — your view switches to the destination's scene if needed (players are unaffected; the scene is *viewed*, not activated) and the camera pans to the destination region's center. Zoom is left alone.
+
+- **Use:** on the Regions layer, select or hover the teleport region and press **J** (rebindable under Configure Controls); on any other layer (e.g. Tokens), just hover the mouse over where the teleport region sits and press **J**. If multiple destinations apply (a multi-destination behavior, or overlapping teleport regions under the cursor), a picker dialog appears.
+- **Requires:** core Foundry only (v14 teleport behaviors store a `destinations` set). GM-only, purely client-side.
+
 ## Development
 
 - Both scripts guard for their dependency and quietly no-op if it isn't installed, so the module is safe to run with either, both, or neither present.

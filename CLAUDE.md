@@ -70,6 +70,11 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - Success mechanism: `canCastConsumable` passes if any **prepared/spontaneous** entry `canCast` the spell (innate is explicitly excluded when an origin item is involved; match is `tradition || spell in list`). So success adds a temp 0-slot **spontaneous** entry (`proficiencySlug` = the skill) + spell copies wired in via the `flags.pf2e-dailies.identifier` mechanism (same as its Staves daily). dailies auto-deletes temp items at next rest; our `rest` callback clears `flags.pf2e-house-rules.tricked` on items. `process` wipes stale entries/flags first, so re-prepping never stacks.
 - Known leak (documented in README): while an entry exists, *any* consumable of that tradition casts check-free — the system gates per entry, not per item. Strict per-item gating would need an empty-tradition entry (match falls through to spell-list slug) — untested, revisit if needed.
 
+**`scripts/region-teleport-follow.js`** — GM hotkey (J) to "follow" a region's Teleport Token behavior: view the destination's scene + pan to its center.
+- v14 teleport behavior schema: `destinations` is a **SetField of Region UUIDs** (+ `choice` flag) — v12's single `destination` field is gone. Behavior type key is `teleportToken`; skip `disabled` behaviors.
+- Region under cursor off the Regions layer: `canvas.mousePosition` + `RegionDocument#testPoint(ElevatedPoint)`. testPoint is 3D — clamp the test elevation into the region's own `elevation.bottom/top` range (null = ±∞) or elevation-banded regions never match.
+- Navigation is view-only (`scene.view()`, never activate) so players are untouched. Center prefers the drawn placeable (`regionDoc.object.center`) and falls back to a bbox over `regionDoc.shapes` data, since the placeable may not exist right after a scene switch.
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.
