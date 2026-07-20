@@ -77,7 +77,7 @@ class SceneLevelsComposer extends foundry.applications.api.ApplicationV2 {
       icon: "fa-solid fa-layer-group",
       resizable: true,
     },
-    position: { width: 760, height: "auto" },
+    position: { width: 960, height: "auto" },
   };
 
   static #instance = null;
@@ -591,7 +591,7 @@ class StairPainter extends foundry.applications.api.ApplicationV2 {
     id: "phr-stair-painter",
     classes: ["phr-inserter", "slc-painter"],
     window: { title: "Stair Painter", icon: "fa-solid fa-stairs" },
-    position: { width: 440, height: "auto" },
+    position: { width: 620, height: "auto" },
   };
 
   static #instance = null;
