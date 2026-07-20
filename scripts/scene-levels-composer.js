@@ -790,19 +790,36 @@ class StairPainter extends foundry.applications.api.ApplicationV2 {
 /*  Entry points                                */
 /* -------------------------------------------- */
 
+/** Show the directory's Stair Painter button only while the viewed scene is multi-level. */
+function refreshStairButtons() {
+  const show = (canvas?.scene?.levels?.size ?? 0) >= 2;
+  for (const button of document.querySelectorAll(".slc-paint-stairs")) button.hidden = !show;
+}
+
 Hooks.on("renderSceneDirectory", (app, html) => {
   if (!game.user.isGM || !foundry.documents?.Level) return;
   const root = html instanceof HTMLElement ? html : html[0];
   if (!root || root.querySelector(".slc-open")) return;
   const footer = root.querySelector(".directory-footer");
   if (!footer) return;
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "slc-open";
-  button.innerHTML = '<i class="fa-solid fa-layer-group"></i> Combine into Levels';
-  button.addEventListener("click", () => SceneLevelsComposer.open());
-  footer.append(button);
+  const stairs = document.createElement("button");
+  stairs.type = "button";
+  stairs.className = "slc-paint-stairs";
+  stairs.innerHTML = '<i class="fa-solid fa-stairs"></i> Stair Painter';
+  stairs.addEventListener("click", () => StairPainter.open());
+  const combine = document.createElement("button");
+  combine.type = "button";
+  combine.className = "slc-open";
+  combine.innerHTML = '<i class="fa-solid fa-layer-group"></i> Combine into Levels';
+  combine.addEventListener("click", () => SceneLevelsComposer.open());
+  footer.append(stairs, combine);
+  refreshStairButtons();
 });
+
+// The directory doesn't re-render when the viewed scene (or its level count) changes.
+Hooks.on("canvasReady", refreshStairButtons);
+Hooks.on("createLevel", refreshStairButtons);
+Hooks.on("deleteLevel", refreshStairButtons);
 
 Hooks.once("ready", () => {
   if (!foundry.documents?.Level) return;
