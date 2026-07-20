@@ -23,7 +23,8 @@ pf2e-house-rules/
 │   ├── compendium-browser-filters.js
 │   ├── trick-magic-daily.js
 │   ├── region-teleport-follow.js
-│   └── scene-levels-composer.js
+│   ├── scene-levels-composer.js
+│   └── level-alpha-mask.js
 └── styles/
     ├── ap-journal-styles.css
     ├── builder-tools.css
@@ -167,6 +168,17 @@ GM tool that converts a stack of classic one-floor scenes (the basement map, the
 
 - **Requires:** core Foundry v14 only (system-agnostic). GM-only.
 - **Caveats:** source scenes that are already multi-level contribute only their initial level's art; lights that should shine on several floors need their Levels tag widened by hand afterwards (deliberately not automated).
+
+### 13. Level Alpha Mask Cutter — `scripts/level-alpha-mask.js`
+
+GM tool that cuts see-through holes into a level's background (or foreground) art on a multi-level scene — the "look down into the floor below" effect — by drawing directly on the canvas, no image editor needed.
+
+Opens from the **Mask Cutter** button in the Scenes directory (visible while the viewed scene has 2+ levels) or `game.modules.get("pf2e-house-rules").api.levelAlphaMask.open()`.
+
+- **Tools:** rectangle drag, click-vertex polygon (Enter/double-click closes, Backspace removes a vertex), and a round brush for organic edges, plus an optional **feather** that softens cut edges. Esc stops the active tool.
+- **Live preview:** every cut is applied to the level's texture in place immediately, so you see straight through to the floor below while editing (make the lower floor visible in the visibility matrix first).
+- **Nondestructive:** cut shapes, feather, and the original image path are stored on the Level document; **Apply** writes a new `<name>-masked-N.webp` beside the original and points the level at it, **Revert to original** switches the art back while keeping your cuts stored for later, and reopening the tool restores everything for further editing. **Forget mask** deletes the stored data and restores the original. Background and foreground masks are stored independently.
+- **Requires:** core Foundry v14 only. GM-only. Source images must live in local Data storage (remote URLs can be previewed but not saved); video backgrounds and rotated level textures aren't supported. Old `-masked-N` revisions accumulate in the image's folder — delete them manually if you care.
 
 ## Development
 

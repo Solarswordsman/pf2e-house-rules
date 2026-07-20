@@ -82,6 +82,11 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - `Level.visibility.levels` on the *viewed* level lists which other levels render. A stair = Region with `levels: [a, b]` + a `changeLevel` behavior (no required config); its destination list is the region's levels minus the token's current one.
 - Stair Painter captures one drag via `window` capture-phase pointer listeners that `stopPropagation()` before PIXI's canvas-element listeners see them (blocks layer drag-select). `canvas.mousePosition` does NOT update while blocked — coordinates come from `canvas.canvasCoordinatesFromClient`. Preview graphics live on `canvas.controls`; PIXI is 7.4 (classic `lineStyle`/`drawRect` API).
 
+**`scripts/level-alpha-mask.js`** — cut see-through alpha holes into a Level's background/foreground art, drawn on-canvas with live preview (system-agnostic, v14-only).
+- Level texture meshes are public: `canvas.primary.levelTextures`, named `Level.<level.index>.<background|foreground>` (from `Scene#_configureLevelTextures`). The array is rebuilt on every canvas draw — resolve meshes by name each use, never hold refs. Live preview = swap `mesh.texture` for a `PIXI.Texture.from(offscreenCanvas)` and call `baseTexture.update()` after recompositing; transparent pixels just reveal lower-level meshes (alphaThreshold only gates occlusion/vision).
+- World→image mapping inverts the mesh placement math (anchor at `sceneRect.center + textures.offset`, fit-mode base scale × `scaleX/Y`); needs the image's natural size, so the original is loaded as an `Image` anyway for compositing. Rotated textures are refused.
+- Nondestructive model: shapes (image-pixel space) + `originalSrc` + feather + rev live at `flags.pf2e-house-rules.alphaMask.<texKey>` on the Level; Apply composites original + mask (canvas 2D `destination-out`, feather via `ctx.filter = blur()`) and uploads `<base>-masked-<rev>.webp` via `foundry.applications.apps.FilePicker.implementation.upload("data", dir, file)`. The rev counter exists because re-uploading the same filename gets served from stale texture caches; old revisions accumulate (documented in README).
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.

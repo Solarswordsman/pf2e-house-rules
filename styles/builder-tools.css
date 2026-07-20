@@ -425,3 +425,23 @@ fieldset.phr-dc > button {
   width: auto;
   flex: 0 1 10rem;
 }
+
+.slc-mask .window-content {
+  padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.slc-mask-body input[type="number"] {
+  width: 3.6rem;
+}
+
+.slc-mask-body .slc-tool {
+  width: auto;
+  flex: 0 0 auto;
+  line-height: 1.2;
+}
+
+.slc-mask-body .slc-tool.active {
+  background: var(--color-warm-2, #c9593f);
+  color: #fff;
+  border-color: var(--color-warm-2, #c9593f);
+}
