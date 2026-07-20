@@ -163,7 +163,7 @@ GM tool that converts a stack of classic one-floor scenes (the basement map, the
 - Different map sizes are auto-centered (grid-aligned) with optional per-floor pixel offsets; different grid *sizes* are scaled to the base scene's grid. Different grid *types* can't be combined.
 - The base scene donates grid, padding, lighting environment, fog, playlist, weather, and journal links; the floor whose band contains elevation 0 becomes the initial level.
 
-**Stair Painter** (offered after creation, from the composer footer, or `…api.sceneLevels.paintStairs()` on any viewed multi-level scene): click Paint next to a floor pair, drag a rectangle over the staircase, and a Region tagged to both levels with a **Change Level** behavior is created — that's a fully working staircase. Adjacent pairs are listed one-click; a custom pair row handles elevators and ladders spanning more floors.
+**Stair Painter** (its own Scenes-directory button whenever the viewed scene has two or more levels, offered after creation, from the composer footer, or `…api.sceneLevels.paintStairs()`): click Paint next to a floor pair, drag a rectangle over the staircase, and a Region tagged to both levels with a **Change Level** behavior is created — that's a fully working staircase. Adjacent pairs are listed one-click; a custom pair row handles elevators and ladders spanning more floors.
 
 - **Requires:** core Foundry v14 only (system-agnostic). GM-only.
 - **Caveats:** source scenes that are already multi-level contribute only their initial level's art; lights that should shine on several floors need their Levels tag widened by hand afterwards (deliberately not automated).
