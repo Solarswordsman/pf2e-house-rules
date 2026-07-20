@@ -71,7 +71,7 @@ class AlphaMaskCutter extends foundry.applications.api.ApplicationV2 {
     id: "phr-alpha-mask-cutter",
     classes: ["phr-inserter", "slc-mask"],
     window: { title: "Level Alpha Mask Cutter", icon: "fa-solid fa-scissors" },
-    position: { width: 560, height: "auto" },
+    position: { width: 575, height: "auto" },
   };
 
   static #instance = null;
@@ -407,8 +407,12 @@ class AlphaMaskCutter extends foundry.applications.api.ApplicationV2 {
     const board = document.getElementById("board");
     if (!board) return;
     const g = new PIXI.Graphics();
+    // Full-alpha strokes faded via a filter: the filter composites the whole
+    // Graphics to a buffer first, so a self-crossing brush stroke can't
+    // multiply against itself.
+    if (this.#tool === "brush") g.filters = [new PIXI.AlphaFilter(0.35)];
     canvas.controls.addChild(g);
-    const state = (this.#capture = { g, origin: null, points: [], handlers: {} });
+    const state = (this.#capture = { g, origin: null, points: [], lastClick: null, handlers: {} });
     const world = (event) => canvas.canvasCoordinatesFromClient({ x: event.clientX, y: event.clientY });
 
     state.handlers.pointerdown = (event) => {
@@ -417,7 +421,13 @@ class AlphaMaskCutter extends foundry.applications.api.ApplicationV2 {
       event.stopPropagation();
       const p = world(event);
       if (this.#tool === "poly") {
-        if (event.detail >= 2 && state.points.length >= 6) return this.#commitPoly();
+        // event.detail is unreliable on pointerdown, so detect double-clicks
+        // manually (quick second click within a few screen pixels).
+        const last = state.lastClick;
+        state.lastClick = { t: performance.now(), x: event.clientX, y: event.clientY };
+        const isDouble =
+          last && state.lastClick.t - last.t < 400 && Math.hypot(event.clientX - last.x, event.clientY - last.y) < 6;
+        if (isDouble && state.points.length >= 6) return this.#commitPoly();
         state.points.push(p.x, p.y);
         this.#drawGuide(p);
       } else {
@@ -448,7 +458,7 @@ class AlphaMaskCutter extends foundry.applications.api.ApplicationV2 {
         g.clear().lineStyle({
           width: this.#brushSize,
           color: 0xe04040,
-          alpha: 0.35,
+          alpha: 1,
           cap: PIXI.LINE_CAP.ROUND,
           join: PIXI.LINE_JOIN.ROUND,
         });
@@ -504,6 +514,17 @@ class AlphaMaskCutter extends foundry.applications.api.ApplicationV2 {
         event.stopPropagation();
         state.points.splice(-2, 2);
         this.#drawGuide(null);
+      } else if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (this.#tool === "poly" && state.points.length) {
+          state.points.splice(-2, 2);
+          this.#drawGuide(null);
+        } else if (this.#shapes.length) {
+          this.#shapes.pop();
+          this.#recomposite();
+          this.render();
+        }
       }
     };
 
