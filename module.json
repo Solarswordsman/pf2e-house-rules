@@ -14,7 +14,8 @@
     "scripts/crafting-formula-search.js",
     "scripts/compendium-browser-filters.js",
     "scripts/trick-magic-daily.js",
-    "scripts/region-teleport-follow.js"
+    "scripts/region-teleport-follow.js",
+    "scripts/scene-levels-composer.js"
   ],
   "styles": [
     "styles/ap-journal-styles.css",

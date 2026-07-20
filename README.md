@@ -21,7 +21,9 @@ pf2e-house-rules/
 │   ├── infiltration-builder.js
 │   ├── crafting-formula-search.js
 │   ├── compendium-browser-filters.js
-│   └── trick-magic-daily.js
+│   ├── trick-magic-daily.js
+│   ├── region-teleport-follow.js
+│   └── scene-levels-composer.js
 └── styles/
     ├── ap-journal-styles.css
     ├── builder-tools.css
@@ -148,6 +150,23 @@ GM navigation aid: press **J** on a region with a **Teleport Token** behavior to
 
 - **Use:** on the Regions layer, select or hover the teleport region and press **J** (rebindable under Configure Controls); on any other layer (e.g. Tokens), just hover the mouse over where the teleport region sits and press **J**. If multiple destinations apply (a multi-destination behavior, or overlapping teleport regions under the cursor), a picker dialog appears.
 - **Requires:** core Foundry only (v14 teleport behaviors store a `destinations` set). GM-only, purely client-side.
+
+### 12. Scene Levels Composer — `scripts/scene-levels-composer.js`
+
+GM tool that converts a stack of classic one-floor scenes (the basement map, the ground-floor map, the upstairs map…) into a single **Foundry v14 multi-level scene**, plus a **Stair Painter** for wiring floors together.
+
+**Combine into Levels** (button in the Scenes directory footer, or `game.modules.get("pf2e-house-rules").api.sceneLevels.compose()`):
+
+- Pick scenes and stack them bottom→top; elevation bands default to 20 ft per floor (band height, per-floor bottoms/tops, and basements via a negative "lowest bottom" are all editable).
+- A cross-level **visibility matrix** controls which floors render while viewing another (for maps with alpha cutouts), with None / "each sees the floor below" / All presets.
+- Creates a **new** scene (sources are never touched): each source scene's art becomes a Level, and every wall, light, sound, tile, region, drawing, note — and optionally token — is copied onto **exactly its own level**, with elevations shifted into the floor's band.
+- Different map sizes are auto-centered (grid-aligned) with optional per-floor pixel offsets; different grid *sizes* are scaled to the base scene's grid. Different grid *types* can't be combined.
+- The base scene donates grid, padding, lighting environment, fog, playlist, weather, and journal links; the floor whose band contains elevation 0 becomes the initial level.
+
+**Stair Painter** (offered after creation, from the composer footer, or `…api.sceneLevels.paintStairs()` on any viewed multi-level scene): click Paint next to a floor pair, drag a rectangle over the staircase, and a Region tagged to both levels with a **Change Level** behavior is created — that's a fully working staircase. Adjacent pairs are listed one-click; a custom pair row handles elevators and ladders spanning more floors.
+
+- **Requires:** core Foundry v14 only (system-agnostic). GM-only.
+- **Caveats:** source scenes that are already multi-level contribute only their initial level's art; lights that should shine on several floors need their Levels tag widened by hand afterwards (deliberately not automated).
 
 ## Development
 
