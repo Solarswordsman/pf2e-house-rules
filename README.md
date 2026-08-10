@@ -24,7 +24,8 @@ pf2e-house-rules/
 │   ├── trick-magic-daily.js
 │   ├── region-teleport-follow.js
 │   ├── scene-levels-composer.js
-│   └── level-alpha-mask.js
+│   ├── level-alpha-mask.js
+│   └── navigation-guard.js
 └── styles/
     ├── ap-journal-styles.css
     ├── builder-tools.css
@@ -179,6 +180,14 @@ Opens from the **Mask Cutter** button in the Scenes directory (visible while the
 - **Live preview:** every cut is applied to the level's texture in place immediately, so you see straight through to the floor below while editing (make the lower floor visible in the visibility matrix first).
 - **Nondestructive:** cut shapes, feather, and the original image path are stored on the Level document; **Apply** writes a new `<name>-masked-N.webp` beside the original and points the level at it, **Revert to original** switches the art back while keeping your cuts stored for later, and reopening the tool restores everything for further editing. **Forget mask** deletes the stored data and restores the original. Background and foreground masks are stored independently.
 - **Requires:** core Foundry v14 only. GM-only. Source images must live in local Data storage (remote URLs can be previewed but not saved); video backgrounds and rotated level textures aren't supported. Old `-masked-N` revisions accumulate in the image's folder — delete them manually if you care.
+
+### 14. Navigation Guard — `scripts/navigation-guard.js`
+
+Stops the mouse **back/forward thumb buttons** (easy to fat-finger in [Foundry Lightweight Client](https://github.com/phenomen/flc) or any Chromium browser) from throwing you out of the game.
+
+- **How:** a dummy same-document history entry is kept armed, so a back press pops it and goes nowhere — no navigation, no popup, the press is simply swallowed. As a backstop for *real* unloads (closing the tab, Ctrl+W, F5) the browser's "Leave site?" confirmation is shown.
+- **Settings (client):** the leave-confirmation prompt can be turned off per client (handy while iterating with F5); the back-button trap is always on.
+- **Requires:** nothing — core Foundry, any system. Purely client-side.
 
 ## Development
 

@@ -87,6 +87,9 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 - World→image mapping inverts the mesh placement math (anchor at `sceneRect.center + textures.offset`, fit-mode base scale × `scaleX/Y`); needs the image's natural size, so the original is loaded as an `Image` anyway for compositing. Rotated textures are refused.
 - Nondestructive model: shapes (image-pixel space) + `originalSrc` + feather + rev live at `flags.pf2e-house-rules.alphaMask.<texKey>` on the Level; Apply composites original + mask (canvas 2D `destination-out`, feather via `ctx.filter = blur()`) and uploads `<base>-masked-<rev>.webp` via `foundry.applications.apps.FilePicker.implementation.upload("data", dir, file)`. The rev counter exists because re-uploading the same filename gets served from stale texture caches; old revisions accumulate (documented in README).
 
+**`scripts/navigation-guard.js`** — neutralize mouse back/forward buttons; confirm real unloads.
+- Primary defense is a history-sentinel trap (pushState a dummy entry at load; popstate re-arms it), so mouse-back is a same-document no-op — no unload occurs, so no prompt is involved and browsers can't bypass it. `beforeunload` (`preventDefault` + `returnValue`) is only the backstop for tab close / Ctrl+W / F5, gated behind a client setting (default on) since it fires on every dev-loop F5. The listener reads the setting in a try/catch and fails toward prompting, because unload can happen before `init` registers it.
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.
