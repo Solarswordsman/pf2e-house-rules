@@ -90,6 +90,9 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 **`scripts/navigation-guard.js`** — neutralize mouse back/forward buttons; confirm real unloads.
 - Primary defense is a history-sentinel trap (pushState a dummy entry at load; popstate re-arms it), so mouse-back is a same-document no-op — no unload occurs, so no prompt is involved and browsers can't bypass it. `beforeunload` (`preventDefault` + `returnValue`) is only the backstop for tab close / Ctrl+W / F5, gated behind a client setting (default on) since it fires on every dev-loop F5. The listener reads the setting in a try/catch and fails toward prompting, because unload can happen before `init` registers it.
 
+**`scripts/misc-hooks.js`** — grab-bag for small one-hook automations, one world-scoped enable setting each.
+- Auto origin name: `preCreateItem` (fires on the initiating client only) appends the origin actor's name to effects whose name ends with the word "Immunity" (the name test doubles as the double-append guard — an appended `(Name)` no longer ends with Immunity); origin UUID from `system.context.origin.actor`. `fromUuidSync` **throws** on UUIDs needing async retrieval (compendium origins) — caught and treated as no origin; the whole hook body is try/caught because a `preCreate` hook error cancels the creation. Assigned-character fallback is a separate setting, default off.
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.

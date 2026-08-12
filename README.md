@@ -189,6 +189,13 @@ Stops the mouse **back/forward thumb buttons** (easy to fat-finger in [Foundry L
 - **Settings (client):** the leave-confirmation prompt can be turned off per client (handy while iterating with F5); the back-button trap is always on.
 - **Requires:** nothing — core Foundry, any system. Purely client-side.
 
+### 15. Misc Hooks — `scripts/misc-hooks.js`
+
+A home for small one-hook automations, each with its own world-scoped enable setting.
+
+- **Auto origin name:** effects whose name ends with the word "Immunity" (e.g. the system's "Effect: Cackle Immunity") get the originating actor's name appended on creation — "Effect: Cackle Immunity" becomes "Effect: Cackle Immunity (Seelah)" — so stacked immunities from different casters stay distinguishable. The origin comes from the PF2e effect context; effects without one are left alone (a second setting, off by default, falls back to the creating user's assigned character).
+- **Requires:** PF2e (effect context is a system field), but degrades to a no-op elsewhere.
+
 ## Development
 
 - Both scripts guard for their dependency and quietly no-op if it isn't installed, so the module is safe to run with either, both, or neither present.

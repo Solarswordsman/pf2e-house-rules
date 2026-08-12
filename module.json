@@ -2,7 +2,7 @@
   "id": "pf2e-house-rules",
   "title": "PF2e House Rules",
   "description": "A small collection of personal Foundry/PF2e tweaks for our home game.",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "compatibility": { "minimum": "14", "verified": "14" },
   "esmodules": [
     "scripts/toolbelt-set-targets.js",
@@ -17,7 +17,8 @@
     "scripts/region-teleport-follow.js",
     "scripts/scene-levels-composer.js",
     "scripts/level-alpha-mask.js",
-    "scripts/navigation-guard.js"
+    "scripts/navigation-guard.js",
+    "scripts/misc-hooks.js"
   ],
   "styles": [
     "styles/ap-journal-styles.css",
