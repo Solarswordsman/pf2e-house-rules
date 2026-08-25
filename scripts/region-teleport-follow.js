@@ -129,10 +129,26 @@ async function pickDestination(entries) {
 /*  Navigation                                   */
 /* -------------------------------------------- */
 
-/** View another region: switch scene if needed, pan to its center. */
+/**
+ * View another region: switch scene and/or viewed scene level if needed, pan to
+ * its center. A region restricted to specific levels (non-empty `levels` set)
+ * is only visible while one of them is viewed — teleport stairs between floors
+ * of one multi-level scene are exactly this case, so a same-scene teleport may
+ * still require a level switch.
+ */
 async function goToRegion(destination) {
   const scene = destination.parent;
-  if (scene !== canvas.scene) await scene.view();
+  const sceneChange = scene !== canvas.scene;
+  const levelIds = destination.levels; // Set of level ids; empty = all levels
+  let levelId = null;
+  if (levelIds.size && (sceneChange || !levelIds.has(canvas.level?.id))) {
+    const levels = [...levelIds]
+      .map((id) => scene.levels.get(id))
+      .filter((l) => l)
+      .sort((a, b) => a.sort - b.sort);
+    levelId = levels[0]?.id ?? null;
+  }
+  if (sceneChange || levelId) await scene.view(levelId ? { level: levelId } : {});
   const center = regionCenter(destination);
   if (center) await canvas.animatePan(center);
 }
