@@ -93,10 +93,16 @@ function regionCenter(regionDoc) {
   return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
 }
 
-/** Transition-bearing regions of the viewed scene containing the current mouse position. */
+/**
+ * Transition-bearing regions of the viewed scene containing the current mouse
+ * position. Restricted to regions included in the currently viewed level —
+ * stair regions of different floors stack at the same x/y on multi-level
+ * scenes, and matching the invisible ones would force a picker every time.
+ */
 function transitionRegionsUnderMouse() {
   const { x, y } = canvas.mousePosition;
   return canvas.scene.regions.filter((regionDoc) => {
+    if (canvas.level && !regionDoc.includedInLevel(canvas.level.id)) return false;
     if (!teleportDestinationUuids(regionDoc).size && !changeLevelDestinations(regionDoc).length) return false;
     // Clamp elevation into the region's own range so only x/y matters.
     const elevation = regionDoc.elevation?.bottom ?? regionDoc.elevation?.top ?? 0;
