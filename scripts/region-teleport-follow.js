@@ -1,20 +1,27 @@
 /**
- * Region Teleport Follow — GM navigation through teleport regions.
+ * Region Teleport Follow — GM navigation through transition regions.
  *
- * Select (or hover) a Region that has a Teleport Token behavior and press the
- * hotkey: your own view jumps to the destination region — switching *your*
- * viewed scene if needed (players are untouched) and panning the camera to the
- * destination region's center. Handy for prepping/running maps stitched
- * together with teleporters.
+ * Select (or hover) a Region that has a Teleport Token or Change Scene Level
+ * behavior and press the hotkey: your own view follows the transition —
+ * switching *your* viewed scene or scene level if needed (players are
+ * untouched) and panning the camera to the destination. Handy for
+ * prepping/running maps stitched together with teleporters or stairs.
  *
  * Works from any layer: a selected/hovered region wins (Regions layer), and
- * otherwise teleport regions under the mouse cursor are point-tested — so on
+ * otherwise transition regions under the mouse cursor are point-tested — so on
  * the Token layer, hovering the stairs and pressing the hotkey just works.
  *
  * v14 notes:
  * - The teleport behavior stores a `destinations` Set of Region UUIDs plus a
- *   `choice` flag (v12's single `destination` field is gone). Multiple
- *   resolvable destinations get a picker dialog.
+ *   `choice` flag (v12's single `destination` field is gone).
+ * - The changeLevel behavior has no destination config of its own: its
+ *   destinations are the region's `levels` set (empty = every scene level),
+ *   minus wherever you currently are (`canvas.level`) — mirroring core's
+ *   ChangeLevelRegionBehaviorType.#getDestinationLevels. Switching the viewed
+ *   level is `scene.view({level})`, the same call core makes after a token
+ *   confirms a level change.
+ * - Multiple resolvable destinations (of either kind, including a region that
+ *   has both behaviors) get a single picker dialog.
  * - Regions are ordinary placeables: `canvas.regions.controlled` / `.hover`.
  *   Off-layer, `RegionDocument#testPoint` wants an ElevatedPoint; passing an
  *   elevation inside the region's own range makes the test effectively 2D.
@@ -36,6 +43,19 @@ function teleportDestinationUuids(regionDoc) {
     for (const uuid of behavior.system.destinations ?? []) uuids.add(uuid);
   }
   return uuids;
+}
+
+/**
+ * Destination Levels of a region's enabled changeLevel behaviors: the region's
+ * `levels` set (empty = all scene levels), minus the currently viewed level.
+ */
+function changeLevelDestinations(regionDoc) {
+  if (!regionDoc.behaviors.some((b) => b.type === "changeLevel" && !b.disabled)) return [];
+  const scene = regionDoc.parent;
+  const levels = regionDoc.levels.size
+    ? [...regionDoc.levels].map((id) => scene.levels.get(id)).filter((l) => l)
+    : scene.levels.contents;
+  return levels.filter((l) => l.id !== canvas.level?.id).sort((a, b) => a.sort - b.sort);
 }
 
 /**
@@ -73,24 +93,27 @@ function regionCenter(regionDoc) {
   return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
 }
 
-/** Teleport-bearing regions of the viewed scene containing the current mouse position. */
-function teleportRegionsUnderMouse() {
+/** Transition-bearing regions of the viewed scene containing the current mouse position. */
+function transitionRegionsUnderMouse() {
   const { x, y } = canvas.mousePosition;
   return canvas.scene.regions.filter((regionDoc) => {
-    if (!teleportDestinationUuids(regionDoc).size) return false;
+    if (!teleportDestinationUuids(regionDoc).size && !changeLevelDestinations(regionDoc).length) return false;
     // Clamp elevation into the region's own range so only x/y matters.
     const elevation = regionDoc.elevation?.bottom ?? regionDoc.elevation?.top ?? 0;
     return regionDoc.testPoint({ x, y, elevation });
   });
 }
 
-/** Let the GM pick among multiple destination regions. Returns a RegionDocument or null. */
-async function pickDestination(regions) {
-  const options = regions
-    .map((r, i) => `<option value="${i}">${foundry.utils.escapeHTML(`${r.name ?? r.id} — ${r.parent.name}`)}</option>`)
+/**
+ * Let the GM pick among multiple destinations (regions and/or scene levels).
+ * Takes and returns entries of `{label, go}`; null if cancelled.
+ */
+async function pickDestination(entries) {
+  const options = entries
+    .map((e, i) => `<option value="${i}">${foundry.utils.escapeHTML(e.label)}</option>`)
     .join("");
   const index = await foundry.applications.api.DialogV2.prompt({
-    window: { title: "Teleport Destination" },
+    window: { title: "Transition Destination" },
     content: `<select name="destination" autofocus style="width: 100%;">${options}</select>`,
     ok: {
       label: "Go",
@@ -99,48 +122,78 @@ async function pickDestination(regions) {
     },
     rejectClose: false,
   });
-  return index === null ? null : regions[Number(index)];
+  return index === null ? null : entries[Number(index)];
 }
 
 /* -------------------------------------------- */
 /*  Navigation                                   */
 /* -------------------------------------------- */
 
-async function followTeleport() {
+/** View another region: switch scene if needed, pan to its center. */
+async function goToRegion(destination) {
+  const scene = destination.parent;
+  if (scene !== canvas.scene) await scene.view();
+  const center = regionCenter(destination);
+  if (center) await canvas.animatePan(center);
+}
+
+/** View another level of the current scene, keeping the camera on the source region (the stairs). */
+async function goToLevel(level, sourceDoc) {
+  const center = regionCenter(sourceDoc);
+  await level.parent.view({ level: level.id });
+  if (center) await canvas.animatePan(center);
+}
+
+async function followTransition() {
   const region = canvas.regions?.controlled[0] ?? canvas.regions?.hover;
   let sources;
   if (region) {
     sources = [region.document];
   } else {
-    sources = teleportRegionsUnderMouse();
+    sources = transitionRegionsUnderMouse();
     if (!sources.length) {
-      ui.notifications.info("No teleport region under the cursor — select one on the Regions layer or hover one.");
+      ui.notifications.info("No teleport or level-change region under the cursor — select one on the Regions layer or hover one.");
       return;
     }
   }
 
   const uuids = new Set(sources.flatMap((doc) => [...teleportDestinationUuids(doc)]));
-  if (!uuids.size) {
-    ui.notifications.info(`Region "${region.document.name ?? region.id}" has no enabled Teleport Token behavior.`);
+  const levelEntries = [];
+  const seenLevels = new Set();
+  for (const doc of sources) {
+    for (const level of changeLevelDestinations(doc)) {
+      if (seenLevels.has(level.id)) continue;
+      seenLevels.add(level.id);
+      levelEntries.push({ label: `Level: ${level.name}`, go: () => goToLevel(level, doc) });
+    }
+  }
+
+  if (!uuids.size && !levelEntries.length) {
+    ui.notifications.info(
+      `Region "${region.document.name ?? region.id}" has no enabled Teleport Token or Change Scene Level behavior (or no level other than the current one).`,
+    );
     return;
   }
 
-  const destinations = (await Promise.all([...uuids].map((uuid) => fromUuid(uuid)))).filter(
+  const regionDocs = (await Promise.all([...uuids].map((uuid) => fromUuid(uuid)))).filter(
     (doc) => doc instanceof foundry.documents.RegionDocument,
   );
-  if (!destinations.length) {
+  if (!regionDocs.length && uuids.size && !levelEntries.length) {
     ui.notifications.warn("None of the teleport destinations could be resolved (deleted region or scene?).");
     return;
   }
 
-  const destination = destinations.length === 1 ? destinations[0] : await pickDestination(destinations);
-  if (!destination) return; // picker cancelled
+  const entries = [
+    ...regionDocs.map((doc) => ({
+      label: `${doc.name ?? doc.id} — ${doc.parent.name}`,
+      go: () => goToRegion(doc),
+    })),
+    ...levelEntries,
+  ];
 
-  const scene = destination.parent;
-  if (scene !== canvas.scene) await scene.view();
-
-  const center = regionCenter(destination);
-  if (center) await canvas.animatePan(center);
+  const entry = entries.length === 1 ? entries[0] : await pickDestination(entries);
+  if (!entry) return; // picker cancelled
+  await entry.go();
 }
 
 /* -------------------------------------------- */
@@ -149,12 +202,12 @@ async function followTeleport() {
 
 Hooks.once("init", () => {
   game.keybindings.register(MODULE_ID, "followRegionTeleport", {
-    name: "Follow Region Teleport",
-    hint: "View the teleport destination of the selected/hovered region, or (on other layers) of the teleport region under the mouse cursor: switches your scene if needed and pans to the target region.",
+    name: "Follow Region Transition",
+    hint: "Follow the Teleport Token or Change Scene Level behavior of the selected/hovered region, or (on other layers) of the transition region under the mouse cursor: switches your scene or scene level if needed and pans to the destination.",
     editable: [{ key: "KeyJ" }],
     restricted: true, // GM only
     onDown: () => {
-      followTeleport();
+      followTransition();
       return true;
     },
   });

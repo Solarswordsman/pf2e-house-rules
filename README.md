@@ -148,10 +148,11 @@ Skill picks are remembered between days. Failures simply aren't Tricked today.
 
 ### 11. Region Teleport Follow — `scripts/region-teleport-follow.js`
 
-GM navigation aid: press **J** on a region with a **Teleport Token** behavior to "follow" the teleport yourself — your view switches to the destination's scene if needed (players are unaffected; the scene is *viewed*, not activated) and the camera pans to the destination region's center. Zoom is left alone.
+GM navigation aid: press **J** on a region with a **Teleport Token** or **Change Scene Level** behavior to "follow" the transition yourself — for a teleport, your view switches to the destination's scene if needed (players are unaffected; the scene is *viewed*, not activated) and the camera pans to the destination region's center; for a level change (stairs/ladders on a multi-level scene), your viewed scene level switches to the destination level and the camera stays on the stairs. Zoom is left alone.
 
-- **Use:** on the Regions layer, select or hover the teleport region and press **J** (rebindable under Configure Controls); on any other layer (e.g. Tokens), just hover the mouse over where the teleport region sits and press **J**. If multiple destinations apply (a multi-destination behavior, or overlapping teleport regions under the cursor), a picker dialog appears.
-- **Requires:** core Foundry only (v14 teleport behaviors store a `destinations` set). GM-only, purely client-side.
+- **Use:** on the Regions layer, select or hover the transition region and press **J** (rebindable under Configure Controls); on any other layer (e.g. Tokens), just hover the mouse over where the region sits and press **J**. If multiple destinations apply (a multi-destination teleport, a stair spanning 3+ levels, overlapping regions under the cursor, or a region with both behaviors), a single picker dialog lists them all — level destinations are prefixed `Level:`.
+- **Level destinations** mirror core's own resolution: the region's assigned levels (all scene levels, if none are assigned) minus the level you're currently viewing.
+- **Requires:** core Foundry only (v14 teleport behaviors store a `destinations` set; changeLevel destinations derive from the region's levels). GM-only, purely client-side.
 
 ### 12. Scene Levels Composer — `scripts/scene-levels-composer.js`
 
