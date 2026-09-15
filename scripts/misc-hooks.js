@@ -12,6 +12,13 @@
  *    effect context (`system.context.origin.actor`); with no origin the name
  *    is left alone (optionally falling back to the creating user's assigned
  *    character, off by default).
+ *
+ * 2. Flip tokens hotkey — Shift+F (rebindable) toggles the "Mirror
+ *    Horizontally" option of every controlled token. That option is just the
+ *    sign of `texture.scaleX` (see the TokenConfig mixin: `mirrorX =
+ *    scaleX < 0`), so the toggle is a one-field update per token. Players can
+ *    use it on tokens they own; a bad binding is impossible to fire on tokens
+ *    you can't already edit since `canvas.tokens.controlled` only holds those.
  */
 
 const MODULE_ID = "pf2e-house-rules";
@@ -34,6 +41,33 @@ Hooks.once("init", () => {
     default: false,
   });
 });
+
+Hooks.once("init", () => {
+  game.keybindings.register(MODULE_ID, "flipTokens", {
+    name: "Flip Controlled Tokens",
+    hint: "Toggle \"Mirror Horizontally\" on every token you currently control.",
+    editable: [{ key: "KeyF", modifiers: [foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.SHIFT] }],
+    onDown: () => {
+      flipControlledTokens();
+      return true;
+    },
+  });
+});
+
+async function flipControlledTokens() {
+  const tokens = canvas?.ready ? canvas.tokens.controlled : [];
+  if (!tokens.length) {
+    ui.notifications.warn("Flip Tokens: no tokens controlled.");
+    return;
+  }
+  // Read the raw source: prepared data is fine here too, but `_source` is the
+  // stored value and avoids any active-effect/animation surprises.
+  const updates = tokens.map((t) => ({
+    _id: t.document.id,
+    "texture.scaleX": -(t.document._source.texture.scaleX || 1),
+  }));
+  await canvas.scene.updateEmbeddedDocuments("Token", updates);
+}
 
 Hooks.on("preCreateItem", (item, data, options, userId) => {
   try {

@@ -195,7 +195,8 @@ Stops the mouse **back/forward thumb buttons** (easy to fat-finger in [Foundry L
 A home for small one-hook automations, each with its own world-scoped enable setting.
 
 - **Auto origin name:** effects whose name ends with the word "Immunity" (e.g. the system's "Effect: Cackle Immunity") get the originating actor's name appended on creation — "Effect: Cackle Immunity" becomes "Effect: Cackle Immunity (Seelah)" — so stacked immunities from different casters stay distinguishable. The origin comes from the PF2e effect context; effects without one are left alone (a second setting, off by default, falls back to the creating user's assigned character).
-- **Requires:** PF2e (effect context is a system field), but degrades to a no-op elsewhere.
+- **Flip tokens hotkey:** **Shift+F** (rebindable under Configure Controls) toggles the token config's "Mirror Horizontally" option on every controlled token, so facing changes are one keypress instead of a trip through the config sheet. Works for players on tokens they own. Always on — it's a keybinding, so unbind it to disable.
+- **Requires:** PF2e for the origin-name hook (effect context is a system field), but degrades to a no-op elsewhere. The flip hotkey is system-agnostic.
 
 ## Development
 
