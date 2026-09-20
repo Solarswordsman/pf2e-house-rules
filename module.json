@@ -18,6 +18,7 @@
     "scripts/scene-levels-composer.js",
     "scripts/level-alpha-mask.js",
     "scripts/navigation-guard.js",
+    "scripts/adventures-plus.js",
     "scripts/misc-hooks.js"
   ],
   "styles": [

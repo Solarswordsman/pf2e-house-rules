@@ -96,6 +96,9 @@ A personal Foundry VTT module bundling small PF2e home-game tweaks. Each tweak i
 **`scripts/misc-hooks.js`** — grab-bag for small one-hook automations, one world-scoped enable setting each.
 - Auto origin name: `preCreateItem` (fires on the initiating client only) appends the origin actor's name to effects whose name ends with the word "Immunity" (the name test doubles as the double-append guard — an appended `(Name)` no longer ends with Immunity); origin UUID from `system.context.origin.actor`. `fromUuidSync` **throws** on UUIDs needing async retrieval (compendium origins) — caught and treated as no origin; the whole hook body is try/caught because a `preCreate` hook error cancels the creation. Assigned-character fallback is a separate setting, default off.
 
+**`scripts/adventures-plus.js`** — optional rules from the third-party *Adventures+* supplement; one world-scoped enable setting per rule (default on), setting keys prefixed `ap`.
+- Initiative nat 20/1: `preCreateChatMessage` (rolling client only). Initiative checks carry `flags.core.initiativeRoll: true` + `flags.pf2e.context.type === "initiative"` (system `check.ts`). The note is appended as `li.roll-note` inside the flavor's `ul.notes` (created if absent) with raw `@UUID[...]` text — core only enriches `content` on render, but `ChatMessagePF2e` enriches `flavor` too, so links resolve. Hero Point rerolls delete + recreate the message with the kept roll first in `rolls`, so the hook re-fires correctly. Settings register immediately if `game.ready` (lets the file be console-`import()`ed into a running game before the manifest restart).
+
 ## Adding a tweak
 
 New file in `scripts/`, add it to `esmodules` in `module.json`, document it in `README.md`. Guard for missing dependencies so the module stays safe to run regardless of what's installed.

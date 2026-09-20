@@ -25,7 +25,9 @@ pf2e-house-rules/
 │   ├── region-teleport-follow.js
 │   ├── scene-levels-composer.js
 │   ├── level-alpha-mask.js
-│   └── navigation-guard.js
+│   ├── navigation-guard.js
+│   ├── misc-hooks.js
+│   └── adventures-plus.js
 └── styles/
     ├── ap-journal-styles.css
     ├── builder-tools.css
@@ -197,6 +199,13 @@ A home for small one-hook automations, each with its own world-scoped enable set
 - **Auto origin name:** effects whose name ends with the word "Immunity" (e.g. the system's "Effect: Cackle Immunity") get the originating actor's name appended on creation — "Effect: Cackle Immunity" becomes "Effect: Cackle Immunity (Seelah)" — so stacked immunities from different casters stay distinguishable. The origin comes from the PF2e effect context; effects without one are left alone (a second setting, off by default, falls back to the creating user's assigned character).
 - **Flip tokens hotkey:** **Shift+F** (rebindable under Configure Controls) toggles the token config's "Mirror Horizontally" option on every controlled token, so facing changes are one keypress instead of a trip through the config sheet. Works for players on tokens they own. Always on — it's a keybinding, so unbind it to disable.
 - **Requires:** PF2e for the origin-name hook (effect context is a system field), but degrades to a no-op elsewhere. The flip hotkey is system-agnostic.
+
+### 16. Adventures+ — `scripts/adventures-plus.js`
+
+Optional rules from the third-party *Adventures+* supplement, each behind its own world-scoped enable setting (on by default). Automation is deliberately light: the rules add a linked roll note to the relevant chat card rather than applying conditions.
+
+- **Initiative natural 20 / natural 1:** a natural 20 on an initiative roll adds a note that the roller is **Quickened** on their first turn; a natural 1 adds a note that they are **Off-Guard** until the start of their turn. The note lands in the check card's existing roll-notes list with the condition linked, and follows Hero Point rerolls (the kept die decides).
+- **Requires:** PF2e (initiative checks are identified by the system's message flags).
 
 ## Development
 
