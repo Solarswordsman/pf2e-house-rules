@@ -19,6 +19,20 @@
  *    scaleX < 0`), so the toggle is a one-field update per token. Players can
  *    use it on tokens they own; a bad binding is impossible to fire on tokens
  *    you can't already edit since `canvas.tokens.controlled` only holds those.
+ *
+ * 3. Darkness spell regions — the Region the system places for the Darkness
+ *    spell (PF2e on v14 places spell areas as Regions, stamped with
+ *    `flags.pf2e.origin` = {slug, castRank, ...}) gets an "Adjust Darkness
+ *    Level" behavior in OVERRIDE mode with modifier 1, i.e. darkness level 1
+ *    inside the burst: global illumination is cut there, so creatures need
+ *    darkvision (or a light source) to see in. Behavior + region are renamed
+ *    "Darkness (Rank N)" and the cast rank is kept at
+ *    `flags.pf2e-house-rules.darknessRank` on the behavior for macros.
+ *    Permission wrinkle (`BaseRegion.#canCreate`): only GMs may create a
+ *    Region that carries behaviors, so a player's cast can't be patched in
+ *    `preCreateRegion` — the server would reject the whole placement. GM
+ *    casts take the atomic preCreate path; for everyone else the active GM
+ *    attaches the behavior in `createRegion`, so a GM must be online.
  */
 
 const MODULE_ID = "pf2e-house-rules";
@@ -39,6 +53,14 @@ Hooks.once("init", () => {
     config: true,
     type: Boolean,
     default: false,
+  });
+  game.settings.register(MODULE_ID, "darknessRegions", {
+    name: "Misc: Darkness spell regions dim the light",
+    hint: "Regions placed from the Darkness spell get an Adjust Darkness Level behavior (override to full darkness) and are named by cast rank. Player casts need an online GM.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
   });
 });
 
@@ -95,5 +117,67 @@ Hooks.on("preCreateItem", (item, data, options, userId) => {
   } catch (err) {
     // Never abort item creation over a naming nicety.
     console.error(`${MODULE_ID} | autoOriginName failed`, err);
+  }
+});
+
+/* -------------------------------------------- */
+/*  Darkness spell regions                       */
+/* -------------------------------------------- */
+
+const DARKNESS_BEHAVIOR_TYPE = "adjustDarknessLevel";
+
+/** Cast rank of the Darkness spell a region was placed from, or null if it isn't one. */
+function darknessRegionRank(region) {
+  const origin = region.flags?.pf2e?.origin;
+  if (origin?.slug !== "darkness") return null;
+  return Number(origin.castRank) || 2;
+}
+
+function hasDarknessBehavior(region) {
+  return region._source.behaviors.some((b) => b.type === DARKNESS_BEHAVIOR_TYPE);
+}
+
+function darknessBehaviorSource(rank) {
+  return {
+    name: `Darkness (Rank ${rank})`,
+    type: DARKNESS_BEHAVIOR_TYPE,
+    // OVERRIDE (mode 0) sets the darkness level inside the region to the
+    // modifier outright — 1 is fully dark. See AdjustDarknessLevelRegionBehaviorType.MODES.
+    system: { mode: 0, modifier: 1 },
+    flags: { [MODULE_ID]: { darknessRank: rank } },
+  };
+}
+
+// GM-placed: patch the create data so the region lands with its behavior in
+// one write. (updateSource on an embedded collection appends entries that
+// carry no _id, so this doesn't disturb anything already in `behaviors`.)
+Hooks.on("preCreateRegion", (region, data, options, userId) => {
+  try {
+    if (!game.user.isGM) return;
+    if (!game.settings.get(MODULE_ID, "darknessRegions")) return;
+    const rank = darknessRegionRank(region);
+    if (rank === null || hasDarknessBehavior(region)) return;
+    region.updateSource({
+      name: `Darkness (Rank ${rank})`,
+      behaviors: [darknessBehaviorSource(rank)],
+    });
+  } catch (err) {
+    // A preCreate error cancels the placement — never do that over a nicety.
+    console.error(`${MODULE_ID} | darknessRegions preCreate failed`, err);
+  }
+});
+
+// Player-placed: non-GMs can't create behaviors, so the active GM attaches
+// one after the fact. The GM path above leaves nothing for this to do.
+Hooks.on("createRegion", async (region, options, userId) => {
+  try {
+    if (game.user !== game.users.activeGM) return;
+    if (!game.settings.get(MODULE_ID, "darknessRegions")) return;
+    const rank = darknessRegionRank(region);
+    if (rank === null || hasDarknessBehavior(region)) return;
+    await region.createEmbeddedDocuments("RegionBehavior", [darknessBehaviorSource(rank)]);
+    await region.update({ name: `Darkness (Rank ${rank})` });
+  } catch (err) {
+    console.error(`${MODULE_ID} | darknessRegions attach failed`, err);
   }
 });
