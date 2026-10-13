@@ -186,7 +186,13 @@ Hooks.on("createRegion", async (region, options, userId) => {
     const rank = darknessRegionRank(region);
     if (rank === null || linkedDarknessLights(region).length) return;
     const light = darknessLightSource(region, rank);
-    if (light) await region.parent.createEmbeddedDocuments("AmbientLight", [light]);
+    if (!light) return;
+    await region.parent.createEmbeddedDocuments("AmbientLight", [light]);
+    // The system places spell areas as "Always for Anyone", which paints the
+    // caster's hatched fill over the darkness; the light is the visual now.
+    if (region.visibility !== CONST.REGION_VISIBILITY.LAYER) {
+      await region.update({ visibility: CONST.REGION_VISIBILITY.LAYER });
+    }
   } catch (err) {
     console.error(`${MODULE_ID} | darknessRegions create failed`, err);
   }
