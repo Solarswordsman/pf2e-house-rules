@@ -22,17 +22,17 @@
  *
  * 3. Darkness spell regions — the Region the system places for the Darkness
  *    spell (PF2e on v14 places spell areas as Regions, stamped with
- *    `flags.pf2e.origin` = {slug, castRank, ...}) gets an "Adjust Darkness
- *    Level" behavior in OVERRIDE mode with modifier 1, i.e. darkness level 1
- *    inside the burst: global illumination is cut there, so creatures need
- *    darkvision (or a light source) to see in. Behavior + region are renamed
- *    "Darkness (Rank N)" and the cast rank is kept at
- *    `flags.pf2e-house-rules.darknessRank` on the behavior for macros.
- *    Permission wrinkle (`BaseRegion.#canCreate`): only GMs may create a
- *    Region that carries behaviors, so a player's cast can't be patched in
- *    `preCreateRegion` — the server would reject the whole placement. GM
- *    casts take the atomic preCreate path; for everyone else the active GM
- *    attaches the behavior in `createRegion`, so a GM must be online.
+ *    `flags.pf2e.origin` = {slug, castRank, ...}) gets a linked AmbientLight
+ *    at its centre with "Is Darkness Source" (`config.negative`) on and
+ *    bright/dim radii matching the burst. That is what PF2e's rules-based
+ *    vision understands as darkness; the adjustDarknessLevel region behavior
+ *    only alters global illumination and fights the system's lighting. The
+ *    light carries `flags.pf2e-house-rules.darknessRegion` = region id and
+ *    `darknessRank`; it follows the region on shape updates and is deleted
+ *    with it, so a player dismissing the darkness (deleting their region)
+ *    cleans up without GM tooling. AmbientLights are GM-only to create, so
+ *    the active GM does all of this from create/update/deleteRegion hooks —
+ *    a GM must be online.
  */
 
 const MODULE_ID = "pf2e-house-rules";
@@ -55,8 +55,8 @@ Hooks.once("init", () => {
     default: false,
   });
   game.settings.register(MODULE_ID, "darknessRegions", {
-    name: "Misc: Darkness spell regions dim the light",
-    hint: "Regions placed from the Darkness spell get an Adjust Darkness Level behavior (override to full darkness) and are named by cast rank. Player casts need an online GM.",
+    name: "Misc: Darkness spell regions get a darkness light",
+    hint: "Regions placed from the Darkness spell get a linked darkness-source Ambient Light of the same size, removed when the region is deleted. Needs an online GM.",
     scope: "world",
     config: true,
     type: Boolean,
@@ -124,8 +124,6 @@ Hooks.on("preCreateItem", (item, data, options, userId) => {
 /*  Darkness spell regions                       */
 /* -------------------------------------------- */
 
-const DARKNESS_BEHAVIOR_TYPE = "adjustDarknessLevel";
-
 /** Cast rank of the Darkness spell a region was placed from, or null if it isn't one. */
 function darknessRegionRank(region) {
   const origin = region.flags?.pf2e?.origin;
@@ -133,51 +131,94 @@ function darknessRegionRank(region) {
   return Number(origin.castRank) || 2;
 }
 
-function hasDarknessBehavior(region) {
-  return region._source.behaviors.some((b) => b.type === DARKNESS_BEHAVIOR_TYPE);
+function linkedDarknessLights(region) {
+  return region.parent?.lights.filter((l) => l.flags[MODULE_ID]?.darknessRegion === region.id) ?? [];
 }
 
-function darknessBehaviorSource(rank) {
+/**
+ * Centre and radius (in scene distance units) for a light covering the region.
+ * Bursts are a single circle shape; anything else gets its bounding circle.
+ */
+function darknessLightGeometry(region) {
+  const scene = region.parent;
+  const shapes = region._source.shapes;
+  if (!scene || !shapes.length) return null;
+  let x, y, radiusPx;
+  const circle = shapes.length === 1 && shapes[0].type === "circle" ? shapes[0] : null;
+  if (circle) {
+    ({ x, y } = circle);
+    radiusPx = circle.radius;
+  } else {
+    const xs = [], ys = [];
+    for (const sh of shapes) {
+      const r = sh.radius ?? Math.max(sh.width ?? 0, sh.height ?? 0, sh.length ?? 0);
+      xs.push(sh.x - r, sh.x + r);
+      ys.push(sh.y - r, sh.y + r);
+    }
+    x = (Math.min(...xs) + Math.max(...xs)) / 2;
+    y = (Math.min(...ys) + Math.max(...ys)) / 2;
+    radiusPx = Math.max(Math.max(...xs) - x, Math.max(...ys) - y);
+  }
+  const radius = (radiusPx / scene.grid.size) * scene.grid.distance;
+  return { x: Math.round(x), y: Math.round(y), radius };
+}
+
+function darknessLightSource(region, rank) {
+  const geo = darknessLightGeometry(region);
+  if (!geo) return null;
   return {
     name: `Darkness (Rank ${rank})`,
-    type: DARKNESS_BEHAVIOR_TYPE,
-    // OVERRIDE (mode 0) sets the darkness level inside the region to the
-    // modifier outright — 1 is fully dark. See AdjustDarknessLevelRegionBehaviorType.MODES.
-    system: { mode: 0, modifier: 1 },
-    flags: { [MODULE_ID]: { darknessRank: rank } },
+    x: geo.x,
+    y: geo.y,
+    elevation: region._source.elevation.bottom ?? 0,
+    levels: region._source.levels,
+    walls: true,
+    vision: false,
+    config: { negative: true, bright: geo.radius, dim: geo.radius },
+    flags: { [MODULE_ID]: { darknessRegion: region.id, darknessRank: rank } },
   };
 }
 
-// GM-placed: patch the create data so the region lands with its behavior in
-// one write. (updateSource on an embedded collection appends entries that
-// carry no _id, so this doesn't disturb anything already in `behaviors`.)
-Hooks.on("preCreateRegion", (region, data, options, userId) => {
-  try {
-    if (!game.user.isGM) return;
-    if (!game.settings.get(MODULE_ID, "darknessRegions")) return;
-    const rank = darknessRegionRank(region);
-    if (rank === null || hasDarknessBehavior(region)) return;
-    region.updateSource({
-      name: `Darkness (Rank ${rank})`,
-      behaviors: [darknessBehaviorSource(rank)],
-    });
-  } catch (err) {
-    // A preCreate error cancels the placement — never do that over a nicety.
-    console.error(`${MODULE_ID} | darknessRegions preCreate failed`, err);
-  }
-});
-
-// Player-placed: non-GMs can't create behaviors, so the active GM attaches
-// one after the fact. The GM path above leaves nothing for this to do.
 Hooks.on("createRegion", async (region, options, userId) => {
   try {
     if (game.user !== game.users.activeGM) return;
     if (!game.settings.get(MODULE_ID, "darknessRegions")) return;
     const rank = darknessRegionRank(region);
-    if (rank === null || hasDarknessBehavior(region)) return;
-    await region.createEmbeddedDocuments("RegionBehavior", [darknessBehaviorSource(rank)]);
-    await region.update({ name: `Darkness (Rank ${rank})` });
+    if (rank === null || linkedDarknessLights(region).length) return;
+    const light = darknessLightSource(region, rank);
+    if (light) await region.parent.createEmbeddedDocuments("AmbientLight", [light]);
   } catch (err) {
-    console.error(`${MODULE_ID} | darknessRegions attach failed`, err);
+    console.error(`${MODULE_ID} | darknessRegions create failed`, err);
+  }
+});
+
+// Keep the light under the region if the GM moves or resizes it.
+Hooks.on("updateRegion", async (region, changed, options, userId) => {
+  try {
+    if (game.user !== game.users.activeGM || !("shapes" in changed)) return;
+    const lights = linkedDarknessLights(region);
+    const geo = lights.length ? darknessLightGeometry(region) : null;
+    if (!geo) return;
+    const updates = lights.map((l) => ({
+      _id: l.id,
+      x: geo.x,
+      y: geo.y,
+      "config.bright": geo.radius,
+      "config.dim": geo.radius,
+    }));
+    await region.parent.updateEmbeddedDocuments("AmbientLight", updates);
+  } catch (err) {
+    console.error(`${MODULE_ID} | darknessRegions update failed`, err);
+  }
+});
+
+// Not gated by the setting: a light we created should always go with its region.
+Hooks.on("deleteRegion", async (region, options, userId) => {
+  try {
+    if (game.user !== game.users.activeGM) return;
+    const ids = linkedDarknessLights(region).map((l) => l.id);
+    if (ids.length) await region.parent.deleteEmbeddedDocuments("AmbientLight", ids);
+  } catch (err) {
+    console.error(`${MODULE_ID} | darknessRegions cleanup failed`, err);
   }
 });
