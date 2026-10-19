@@ -1,0 +1,134 @@
+/* Counteract dialog + entry-point icons (scripts/counteract.js). */
+
+.phr-ct-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+@media (max-width: 760px) {
+  .phr-ct-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.phr-ct-form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.phr-ct-form select[name="source"],
+.phr-ct-form select[name="candidate"] {
+  width: 100%;
+}
+
+.phr-ct-mod {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.phr-ct-modvalue {
+  font-size: 1.4em;
+  font-weight: bold;
+  line-height: 1.1;
+}
+
+.phr-ct-breakdown {
+  font-size: 0.8em;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phr-ct-why {
+  font-size: 0.85em;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+
+.phr-ct-empty {
+  margin: 0;
+  font-size: 0.9em;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.phr-ct-refresh {
+  margin-left: auto;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.phr-ct-refresh:hover {
+  opacity: 1;
+}
+
+/* ---------- verdict table ---------- */
+
+.phr-ct-verdict {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 0.92em;
+}
+
+.phr-ct-verdict th,
+.phr-ct-verdict td {
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.15));
+}
+
+.phr-ct-verdict th {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.phr-ct-verdict tr.ok td.outcome {
+  color: var(--color-text-success, #2f8f4e);
+  font-weight: bold;
+}
+
+.phr-ct-verdict tr.bad td.outcome {
+  color: var(--color-text-failure, #b03a2e);
+}
+
+.phr-ct-verdict tr.na td.outcome {
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.phr-ct-summary {
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid var(--color-warm-2, #c9593f);
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 0.92em;
+  line-height: 1.4;
+}
+
+/* ---------- entry-point icons ---------- */
+
+.effect-info .content h1 a.phr-ct-effect {
+  cursor: pointer;
+}
+
+.sheet .phr-ct-entry {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.sheet .phr-ct-entry:hover {
+  opacity: 1;
+}
+
+.statistic-values .phr-ct-entry-wrap {
+  display: flex;
+  align-items: center;
+}

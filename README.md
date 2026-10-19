@@ -208,6 +208,17 @@ Optional rules from the third-party *Adventures+* supplement, each behind its ow
 - **Initiative natural 20 / natural 1:** a natural 20 on an initiative roll adds a note that the roller is **Quickened** on their first turn; a natural 1 adds a note that they are **Off-Guard** until the start of their turn. The note lands in the check card's existing roll-notes list with the condition linked, and follows Hero Point rerolls (the kept die decides).
 - **Requires:** PF2e (initiative checks are identified by the system's message flags).
 
+### 17. Counteract — `scripts/counteract.js` + `styles/counteract.css`
+
+One-button **counteract checks** for PCs and NPCs, with every number inferred and explained — no external calculator needed.
+
+- **Open it** from the **Counteract** header button on character/NPC sheets, the hand-sparkles icon next to each spellcasting entry's DC (preselects that entry), the same icon on an effect's hover card in the Effects panel (prefills that effect as the target), the **K** key (controlled token or assigned character, against your current target), or `game.modules.get("pf2e-house-rules").api.counteract.open({ actor })`.
+- **Who's counteracting:** a source picker listing each spellcasting entry's *counteract* statistic (attribute + proficiency only — spell-attack item/status bonuses don't apply, and innate entries already use Charisma + max(trained, best spell proficiency)), class DC − 10 (e.g. Counter Element), skills behind a collapsed **Skill…** option (e.g. Counter Performance), or a custom modifier. The best spellcasting entry is the default. Counteract rank defaults to the entry's highest rank (half level rounded up for non-spell sources); a spell dropdown lists the entry's counteract spells (Dispel Magic & co.) to set the rank in one click.
+- **What's being counteracted:** target a token first. The dialog lists **effects on the target** (rank/DC from the effect's origin: caster's spell DC, affliction save DC, or a level-based DC) and **effects/spells cast by the target** (effects it originated on other tokens, plus its recent casts from the chat log). Pick one to pin DC and rank; pick none and it just uses the target's own spell DC — right for both "dispel their buff" and "dispel the cloud they cast", leaving only the rank to the result table. Defaults: a lone candidate is preselected; an allied target preselects the first effect from a hostile source. With no target, no DC is inferred and the card shows the full rank table for the GM to resolve. Players targeting a token they don't own never see DC numbers (the card follows the system's metagame settings); a GM-only note on the card says where the DC came from.
+- **Live verdict:** a per-degree table of the *total* needed, the odds, and whether that result counteracts the target rank, plus a one-line summary. Shift-click the roll button to skip the modifier dialog.
+- **Roll:** goes through the system's own check pipeline (modifier dialog, fortune/misfortune, secret rolls, rule-element bonuses on the `counteract` selector) with the DC attached, so the card resolves the degree of success and says "Counteracted!" or "Not counteracted: target rank N exceeds…". Nothing is deleted automatically.
+- **Requires:** the PF2e system.
+
 ## Development
 
 - Both scripts guard for their dependency and quietly no-op if it isn't installed, so the module is safe to run with either, both, or neither present.

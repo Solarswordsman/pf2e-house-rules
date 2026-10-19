@@ -19,14 +19,16 @@
     "scripts/level-alpha-mask.js",
     "scripts/navigation-guard.js",
     "scripts/adventures-plus.js",
-    "scripts/misc-hooks.js"
+    "scripts/misc-hooks.js",
+    "scripts/counteract.js"
   ],
   "styles": [
     "styles/ap-journal-styles.css",
     "styles/crafting-formula-search.css",
     "styles/builder-tools.css",
     "styles/sog-journal-header.css",
-    "styles/trick-magic-daily.css"
+    "styles/trick-magic-daily.css",
+    "styles/counteract.css"
   ],
   "socket": true,
   "authors": [{ "name": "Jeff Lamb" }],
