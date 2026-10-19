@@ -142,3 +142,28 @@
   display: flex;
   align-items: center;
 }
+
+/* ---------- chat card actions ---------- */
+
+.phr-ct-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.4rem;
+}
+
+.phr-ct-actions button {
+  width: 100%;
+  margin: 0;
+}
+
+.phr-ct-actions button.counteracted {
+  border-color: var(--color-text-success, #2f8f4e);
+  font-weight: bold;
+}
+
+.phr-ct-actions .hint {
+  font-size: 0.8em;
+  font-style: italic;
+  opacity: 0.75;
+}

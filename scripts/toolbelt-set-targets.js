@@ -106,8 +106,9 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
   // Only the active GM performs the privileged flag write on behalf of players.
-  game.socket.on(CHANNEL, async ({ messageId, uuids }) => {
-    if (!game.user.isActiveGM) return;
+  game.socket.on(CHANNEL, async (data) => {
+    if (!game.user.isActiveGM || data?.type) return; // typed payloads belong to other tweaks sharing this channel
+    const { messageId, uuids } = data;
     try {
       await writeTargets(game.messages.get(messageId), uuids);
     } catch (e) {

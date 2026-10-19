@@ -51,6 +51,8 @@
 import { levelBasedDC } from "./expressions-inserter.js";
 
 const MODULE_ID = "pf2e-house-rules";
+const CHANNEL = `module.${MODULE_ID}`;
+const REMOVE_SETTING = "counteractRemoveButton";
 
 const DEGREES = ["criticalSuccess", "success", "failure", "criticalFailure"];
 const DEGREE_LABELS = {
@@ -886,6 +888,29 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
     if (event?.shiftKey || this.#skipDialog) params.skipDialog = true;
     this.#skipDialog = false;
 
+    // Remember which effect item this was aimed at so the card can offer to remove it.
+    const effectItem = cand?.kind === "effect" ? cand.effect : null;
+    if (effectItem?.actor) {
+      params.callback = async (_roll, outcome, message) => {
+        if (!message) return;
+        try {
+          await message.update({
+            [`flags.${MODULE_ID}.counteract`]: {
+              effectUuid: effectItem.uuid,
+              effectName: effectItem.name,
+              bearerUuid: effectItem.actor.uuid,
+              bearerName: effectItem.actor.name,
+              myRank,
+              targetRank,
+              outcome: outcome ?? null,
+            },
+          });
+        } catch (error) {
+          console.error(`${MODULE_ID} | failed to tag counteract card`, error);
+        }
+      };
+    }
+
     try {
       await statistic.check.roll(params);
       this.close();
@@ -894,6 +919,101 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
       ui.notifications.error("Counteract: the roll failed — see the console.");
     }
   }
+}
+
+/* -------------------------------------------- */
+/*  Chat card: remove / restore the effect       */
+/* -------------------------------------------- */
+
+function cardData(message) {
+  return message?.flags?.[MODULE_ID]?.counteract ?? null;
+}
+
+/** Delete the targeted effect and stash its source on the card for Restore. */
+async function performRemove(message, effect) {
+  const bearer = effect.actor;
+  if (!bearer) return;
+  const source = effect.toObject();
+  await effect.delete();
+  await message.update({
+    [`flags.${MODULE_ID}.counteract.removed`]: { source, bearerUuid: bearer.uuid, by: game.user.name, at: Date.now() },
+  });
+}
+
+/** Recreate the removed effect (same id) and clear the Restore state. */
+async function performRestore(message) {
+  const data = cardData(message);
+  const removed = data?.removed;
+  if (!removed?.source) return;
+  const bearer = resolveActor(removed.bearerUuid ?? data.bearerUuid);
+  if (!bearer) return void ui.notifications.warn(`Counteract: ${data.bearerName ?? "the bearer"} is no longer around to restore ${data.effectName} to.`);
+  if (!bearer.items.get(removed.source._id)) {
+    await bearer.createEmbeddedDocuments("Item", [removed.source], { keepId: true });
+  }
+  await message.update({ [`flags.${MODULE_ID}.counteract.-=removed`]: null });
+}
+
+/** Run an action locally when permitted, otherwise hand it to the active GM. */
+async function requestCardAction(message, action) {
+  const data = cardData(message);
+  if (!data) return;
+  const canEditMessage = game.user.isGM || message.isAuthor;
+  if (action === "remove") {
+    const effect = safeFromUuidSync(data.effectUuid);
+    if (!effect?.isOfType?.("effect", "affliction")) {
+      return void ui.notifications.warn(`Counteract: ${data.effectName} is no longer on ${data.bearerName}.`);
+    }
+    if (effect.actor?.isOwner && canEditMessage) return performRemove(message, effect);
+  } else if (action === "restore") {
+    const bearer = resolveActor(data.removed?.bearerUuid ?? data.bearerUuid);
+    if (bearer?.isOwner && canEditMessage) return performRestore(message);
+  }
+  if (!game.users.activeGM) return void ui.notifications.error("Counteract: no GM is online to do that for you.");
+  game.socket.emit(CHANNEL, { type: "counteract", action, messageId: message.id });
+  ui.notifications.info(`Counteract: asked the GM to ${action} ${data.effectName}.`);
+}
+
+function decorateCard(message, html) {
+  const data = cardData(message);
+  if (!data) return;
+  try {
+    if (!game.settings.get(MODULE_ID, REMOVE_SETTING)) return;
+  } catch {
+    return;
+  }
+  const root = html instanceof HTMLElement ? html : html?.[0];
+  const content = root?.querySelector(".message-content");
+  if (!content || content.querySelector(".phr-ct-actions")) return;
+  const bearer = resolveActor(data.bearerUuid);
+  if (!(game.user.isGM || message.isAuthor || bearer?.isOwner)) return;
+
+  const box = document.createElement("div");
+  box.className = "phr-ct-actions";
+  const button = document.createElement("button");
+  button.type = "button";
+  const hint = document.createElement("span");
+  hint.className = "hint";
+
+  if (data.removed) {
+    button.innerHTML = `<i class="fa-solid fa-rotate-left"></i> Restore ${esc(data.effectName)} to ${esc(data.bearerName)}`;
+    hint.textContent = `Removed by ${data.removed.by}.`;
+    button.addEventListener("click", () => requestCardAction(message, "restore"));
+  } else {
+    const effect = safeFromUuidSync(data.effectUuid);
+    if (!effect) {
+      hint.textContent = `${data.effectName} is no longer on ${data.bearerName}.`;
+      box.append(hint);
+      content.append(box);
+      return;
+    }
+    const ok = data.outcome ? counteracts(data.outcome, data.myRank, data.targetRank) : null;
+    button.innerHTML = `<i class="fa-solid fa-hand-sparkles"></i> Remove ${esc(data.effectName)} from ${esc(data.bearerName)}${ok === false ? " anyway" : ""}`;
+    button.classList.toggle("counteracted", ok === true);
+    hint.textContent = ok === true ? "This result counteracts it." : ok === false ? "This result didn't counteract it." : "GM decides whether it was counteracted.";
+    button.addEventListener("click", () => requestCardAction(message, "remove"));
+  }
+  box.append(button, hint);
+  content.append(box);
 }
 
 /* -------------------------------------------- */
@@ -987,6 +1107,14 @@ function decorateSheet(sheet, html) {
 
 Hooks.once("init", () => {
   if (game.system.id !== "pf2e") return;
+  game.settings.register(MODULE_ID, REMOVE_SETTING, {
+    name: "Counteract: show Remove Effect button on counteract cards",
+    hint: "When a counteract check was aimed at a specific effect, the chat card offers a button to remove that effect from its bearer (with a Restore button afterwards). Players without permission on the bearer relay the request to the active GM.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
   game.keybindings.register(MODULE_ID, "counteract", {
     name: "Counteract Check",
     hint: "Open the Counteract dialog for the controlled token (or your assigned character), targeting your current target.",
@@ -1011,6 +1139,25 @@ Hooks.once("ready", () => {
   }
   Hooks.on("renderCharacterSheetPF2e", decorateSheet);
   Hooks.on("renderNPCSheetPF2e", decorateSheet);
+  Hooks.on("renderChatMessageHTML", decorateCard);
+
+  // The active GM performs removals/restores that players lack permission for.
+  game.socket.on(CHANNEL, async (data) => {
+    if (data?.type !== "counteract" || !game.user.isActiveGM) return;
+    const message = game.messages.get(data.messageId);
+    const card = cardData(message);
+    if (!card) return;
+    try {
+      if (data.action === "remove") {
+        const effect = safeFromUuidSync(card.effectUuid);
+        if (effect?.isOfType?.("effect", "affliction")) await performRemove(message, effect);
+      } else if (data.action === "restore") {
+        await performRestore(message);
+      }
+    } catch (error) {
+      console.error(`${MODULE_ID} | counteract ${data.action} failed`, error);
+    }
+  });
 
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
