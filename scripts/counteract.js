@@ -438,7 +438,7 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
 
     const preferred = opts.sourceId && [...sources, custom].find((s) => s.id === opts.sourceId);
     const initial = preferred || sources.find((s) => s.kind === "entry") || sources[0] || custom;
-    this.state = {
+    this.values = {
       sourceId: initial.id,
       skill: skills[0]?.statistic?.slug ?? "",
       customMod: 0,
@@ -484,17 +484,17 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
 
   #applyCandidate(id) {
     const cand = this.#candidate(id);
-    this.state.candidateId = cand ? id : "";
+    this.values.candidateId = cand ? id : "";
     const info = cand ?? this.targets.fallback;
-    this.state.dc = info?.dc ?? null;
-    this.state.targetRank = info?.rank ?? null;
+    this.values.dc = info?.dc ?? null;
+    this.values.targetRank = info?.rank ?? null;
   }
 
   #currentSource() {
-    const { sourceId } = this.state;
-    if (sourceId === "custom") return { ...this.custom, mod: toInt(this.state.customMod) ?? 0 };
+    const { sourceId } = this.values;
+    if (sourceId === "custom") return { ...this.custom, mod: toInt(this.values.customMod) ?? 0 };
     if (sourceId === "skill") {
-      return this.skills.find((s) => s.statistic.slug === this.state.skill) ?? this.skills[0] ?? this.custom;
+      return this.skills.find((s) => s.statistic.slug === this.values.skill) ?? this.skills[0] ?? this.custom;
     }
     return this.sources.find((s) => s.id === sourceId) ?? this.custom;
   }
@@ -513,7 +513,7 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
 
   #buildHTML() {
     const src = this.#currentSource();
-    const s = this.state;
+    const s = this.values;
     const sourceOptions = [
       ...this.sources.map(
         (x) =>
@@ -621,7 +621,7 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
   _onRender() {
     const form = this.element.querySelector("form.phr-ct-form");
     if (!form) return;
-    const s = this.state;
+    const s = this.values;
 
     form.addEventListener("change", (event) => {
       const el = event.target;
@@ -713,9 +713,9 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
     if (!form) return;
     const src = this.#currentSource();
     const mod = src.mod;
-    const myRank = this.state.rank;
-    const targetRank = this.state.targetRank;
-    const dc = this.state.dc;
+    const myRank = this.values.rank;
+    const targetRank = this.values.targetRank;
+    const dc = this.values.dc;
     const showNumbers = this.targets.canSeeDetails !== false;
 
     const modEl = form.querySelector("[data-mod]");
@@ -783,13 +783,13 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
     const statistic = src.kind === "custom" ? this.#customStatistic(src.mod) : src.statistic;
     if (!statistic?.check) return void ui.notifications.warn("Counteract: no statistic to roll with.");
 
-    const myRank = this.state.rank;
-    const targetRank = this.state.targetRank;
-    const dc = this.state.dc;
-    const cand = this.#candidate(this.state.candidateId);
+    const myRank = this.values.rank;
+    const targetRank = this.values.targetRank;
+    const dc = this.values.dc;
+    const cand = this.#candidate(this.values.candidateId);
     const T = this.target.actor ?? null;
     const dcWhy = cand?.dcWhy ?? this.targets.fallback?.dcWhy ?? null;
-    const spell = src.kind === "entry" && this.state.spellId ? src.spells.find((sp) => sp.id === this.state.spellId) ?? null : null;
+    const spell = src.kind === "entry" && this.values.spellId ? src.spells.find((sp) => sp.id === this.values.spellId) ?? null : null;
 
     const what = cand
       ? `<b>${esc(cand.label)}</b>${cand.bearerName && cand.bearerName !== T?.name ? ` on ${esc(cand.bearerName)}` : T ? ` on ${esc(T.name)}` : ""}`
