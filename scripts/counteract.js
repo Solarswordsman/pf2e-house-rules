@@ -425,18 +425,26 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
     return this.#instance;
   }
 
+  #skipDialog = false;
+
   constructor(opts) {
     super();
-    this.actor = opts.actor;
-    this.token = opts.token ?? this.actor.token ?? this.actor.getActiveTokens?.(true, true)?.[0] ?? null;
     this.presetEffect = opts.effect ?? null;
+    this.#setActor(opts.actor, opts.token ?? null, opts.sourceId ?? null);
+    this.#readTarget();
+  }
 
-    const { sources, skills, custom } = collectSources(this.actor);
+  /** Set (or switch) who is counteracting: rebuilds the source list and its defaults. */
+  #setActor(actor, token = null, sourceId = null) {
+    this.actor = actor;
+    this.token = token ?? actor.token ?? actor.getActiveTokens?.(true, true)?.[0] ?? null;
+
+    const { sources, skills, custom } = collectSources(actor);
     this.sources = sources;
     this.skills = skills;
     this.custom = custom;
 
-    const preferred = opts.sourceId && [...sources, custom].find((s) => s.id === opts.sourceId);
+    const preferred = sourceId && [...sources, custom].find((s) => s.id === sourceId);
     const initial = preferred || sources.find((s) => s.kind === "entry") || sources[0] || custom;
     this.values = {
       sourceId: initial.id,
@@ -444,11 +452,29 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
       customMod: 0,
       spellId: "",
       rank: initial.defaultRank,
-      candidateId: "",
-      dc: null,
-      targetRank: null,
+      candidateId: this.values?.candidateId ?? "",
+      dc: this.values?.dc ?? null,
+      targetRank: this.values?.targetRank ?? null,
     };
-    this.#readTarget();
+  }
+
+  /**
+   * Actors this user could counteract with: the current one, controlled tokens,
+   * owned tokens on the scene, the assigned character, and (for players) every
+   * owned character in the world — players running several PCs need to switch.
+   */
+  #rollerChoices() {
+    const choices = new Map();
+    const add = (actor, token = null) => {
+      if (!actor?.isOwner || !actor.isOfType?.("character", "npc") || choices.has(actor.uuid)) return;
+      choices.set(actor.uuid, { actor, token });
+    };
+    add(this.actor, this.token);
+    for (const t of canvas?.tokens?.controlled ?? []) add(t.actor, t.document);
+    for (const t of canvas?.scene?.tokens ?? []) add(t.actor, t);
+    add(game.user.character);
+    if (!game.user.isGM) for (const a of game.actors ?? []) if (a.type === "character") add(a);
+    return [...choices.values()];
   }
 
   /** (Re)read the target from a preset effect or the user's current targets. */
@@ -532,6 +558,13 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
           .join("")
       : "";
     const breakdown = src.statistic?.check?.breakdown ?? "";
+    this.rollers = this.#rollerChoices();
+    const rollerPicker =
+      this.rollers.length > 1
+        ? `<select name="roller" class="phr-ct-roller">${this.rollers
+            .map((r) => `<option value="${esc(r.actor.uuid)}" ${r.actor.uuid === this.actor.uuid ? "selected" : ""}>${esc(r.actor.name)}</option>`)
+            .join("")}</select>`
+        : esc(this.actor.name);
 
     const T = this.target.actor;
     const { onTarget, castBy, fallback, canSeeDetails } = this.targets;
@@ -582,7 +615,7 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
     return `
     <form class="phr-body phr-ct-form" autocomplete="off">
       <div class="phr-ct-columns">
-        <fieldset class="phr-dc"><legend>Who's counteracting — ${esc(this.actor.name)}</legend>
+        <fieldset class="phr-dc"><legend>Who's counteracting — ${rollerPicker}</legend>
           <select name="source">${sourceOptions}</select>
           <div class="phr-row" data-skill-row ${s.sourceId === "skill" ? "" : "hidden"}>
             <label>Skill <select name="skill">${skillOptions}</select></label>
@@ -626,6 +659,14 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
     form.addEventListener("change", (event) => {
       const el = event.target;
       switch (el.name) {
+        case "roller": {
+          const choice = this.rollers?.find((r) => r.actor.uuid === el.value);
+          if (!choice) return;
+          this.#setActor(choice.actor, choice.token);
+          this.#readTarget();
+          this.render();
+          return;
+        }
         case "source": {
           s.sourceId = el.value;
           s.spellId = "";
@@ -689,6 +730,8 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
     });
 
     form.addEventListener("click", (event) => {
+      // Submit events carry no modifier keys: remember shift from the button click.
+      if (event.target.closest("button[type=submit]")) this.#skipDialog = !!event.shiftKey;
       if (event.target.closest("[data-refresh-target]")) {
         event.preventDefault();
         this.presetEffect = null;
@@ -840,7 +883,8 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
       item: spell ?? null,
     };
     if (this.token) params.token = this.token;
-    if (event?.shiftKey) params.skipDialog = true;
+    if (event?.shiftKey || this.#skipDialog) params.skipDialog = true;
+    this.#skipDialog = false;
 
     try {
       await statistic.check.roll(params);
@@ -857,19 +901,21 @@ class CounteractDialog extends foundry.applications.api.ApplicationV2 {
 /* -------------------------------------------- */
 
 /** Best guess at "who is acting": a controlled token, else the assigned character. */
-function rollerFor({ exclude = null } = {}) {
+function rollerFor() {
   const controlled = canvas?.tokens?.controlled ?? [];
-  const token = controlled.find((t) => t.actor && t.actor !== exclude && t.actor.isOfType?.("character", "npc"));
+  const token = controlled.find((t) => t.actor?.isOfType?.("character", "npc"));
   if (token) return { actor: token.actor, token: token.document };
   const character = game.user.character;
-  if (character && character !== exclude) {
-    return { actor: character, token: character.getActiveTokens?.(true, true)?.[0] ?? null };
-  }
+  if (character) return { actor: character, token: character.getActiveTokens?.(true, true)?.[0] ?? null };
   return null;
 }
 
+/** From an effect's hover card: the controlled token (usually the bearer itself) counteracts; the picker allows switching. */
 function openForEffect(effect) {
-  const roller = rollerFor({ exclude: effect.actor });
+  const bearer = effect.actor;
+  const roller =
+    rollerFor() ??
+    (bearer?.isOwner ? { actor: bearer, token: bearer.token ?? bearer.getActiveTokens?.(true, true)?.[0] ?? null } : null);
   if (!roller) {
     ui.notifications.warn("Counteract: select the token that's counteracting (or assign yourself a character).");
     return;

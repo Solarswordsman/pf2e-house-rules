@@ -19,6 +19,16 @@
   min-width: 0;
 }
 
+.phr-ct-form legend select.phr-ct-roller {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0 0.25rem;
+  font: inherit;
+  font-weight: bold;
+}
+
 .phr-ct-form select[name="source"],
 .phr-ct-form select[name="candidate"] {
   width: 100%;
