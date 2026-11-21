@@ -33,6 +33,24 @@
  *    cleans up without GM tooling. AmbientLights are GM-only to create, so
  *    the active GM does all of this from create/update/deleteRegion hooks —
  *    a GM must be online.
+ *
+ * 4. Consumable damage formula templates — works around PF2e HUD's consumable
+ *    "use" path (`consumeItem` in reonZ's foundry-helpers `src/item.ts`), which
+ *    builds `new DamageRoll("(formula)[type,kind]")` with **no roll data**; the
+ *    system's own `ConsumablePF2e#consume` passes `this.getRollData()`. Without
+ *    data, `DamageInstance.parse` replaces every `@item.level` with "0", so a
+ *    scaling consumable rolls 0 dice from the HUD. Fix: keep the scaling
+ *    formula in `flags.world.damageFormulaTemplate` and bake the resolved,
+ *    reference-free result into `system.damage.formula` whenever the item is
+ *    created or its level/template changes — then both paths roll the same
+ *    thing. Only item-level references are baked (`@item.level`,
+ *    `@item.system.level.value`); anything else (e.g. `@actor.level`) is left
+ *    in place and still only works from the sheet. No manual flagging is needed:
+ *    a formula that still contains an item-level reference is adopted as the
+ *    template (copied to the flag) and baked on creation or on the item's next
+ *    update — so typing a new scaling formula on the sheet replaces the
+ *    template, while a reference-free hand edit is overwritten on the next
+ *    level change.
  */
 
 const MODULE_ID = "pf2e-house-rules";
@@ -57,6 +75,14 @@ Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "darknessRegions", {
     name: "Misc: Darkness spell regions get a darkness light",
     hint: "Regions placed from the Darkness spell get a linked darkness-source Ambient Light of the same size, removed when the region is deleted. Needs an online GM.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+  game.settings.register(MODULE_ID, "consumableFormulaTemplates", {
+    name: "Misc: bake consumable damage formula templates",
+    hint: "Consumable damage/healing formulas that reference @item.level (e.g. \"(@item.level)d8\") are resolved to plain dice on creation and whenever the item's level changes, so scaling consumables roll correctly from PF2e HUD. The scaling formula is kept in flags.world.damageFormulaTemplate.",
     scope: "world",
     config: true,
     type: Boolean,
@@ -226,5 +252,77 @@ Hooks.on("deleteRegion", async (region, options, userId) => {
     if (ids.length) await region.parent.deleteEmbeddedDocuments("AmbientLight", ids);
   } catch (err) {
     console.error(`${MODULE_ID} | darknessRegions cleanup failed`, err);
+  }
+});
+
+/* -------------------------------------------- */
+/*  Consumable damage formula templates          */
+/* -------------------------------------------- */
+
+// Flag scope is "world" (not the module id) because existing items already
+// carry it from the world-script version of these hooks.
+const TEMPLATE_SCOPE = "world";
+const TEMPLATE_FLAG = "damageFormulaTemplate";
+const TEMPLATE_PATH = `flags.${TEMPLATE_SCOPE}.${TEMPLATE_FLAG}`;
+
+/** Resolve item-level references; unknown references are left untouched. */
+function bakeFormula(template, level) {
+  return Roll.replaceFormulaData(template, { item: { level, system: { level: { value: level } } } });
+}
+
+/** A usable template is a non-empty string (v14 deletions arrive as ForcedDeletion objects). */
+function formulaTemplate(value) {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+/** A formula still holding item-level references is itself a template waiting to be adopted. */
+function unbakedFormula(value) {
+  return typeof value === "string" && /@item\.(system\.level\.value|level)\b/.test(value) ? value : null;
+}
+
+Hooks.on("preCreateItem", (item) => {
+  try {
+    if (item.type !== "consumable" || !item.system.damage) return;
+    // An unbaked formula wins over the flag: it is what the author last typed.
+    const adopted = unbakedFormula(item.system.damage.formula);
+    const template = adopted ?? formulaTemplate(item.flags?.[TEMPLATE_SCOPE]?.[TEMPLATE_FLAG]);
+    if (!template) return;
+    if (!game.settings.get(MODULE_ID, "consumableFormulaTemplates")) return;
+    const update = { "system.damage.formula": bakeFormula(template, item.system.level?.value ?? 1) };
+    if (adopted) update[TEMPLATE_PATH] = adopted;
+    item.updateSource(update);
+  } catch (err) {
+    console.error(`${MODULE_ID} | consumableFormulaTemplates create failed`, err);
+  }
+});
+
+Hooks.on("preUpdateItem", (item, changes) => {
+  try {
+    if (item.type !== "consumable") return;
+
+    // Damage must exist after this update: skip if it is absent or being removed.
+    const damageChange = foundry.utils.getProperty(changes, "system.damage");
+    const damageKept = damageChange === undefined ? !!item.system.damage : foundry.utils.getType(damageChange) === "Object";
+    if (!damageKept) return;
+
+    // Template precedence: an unbaked formula (typed just now, or left over on
+    // an item that predates this hook — any update then bakes it), else a
+    // changed flag (a deletion means nothing to bake), else the stored flag.
+    const adopted = unbakedFormula(foundry.utils.getProperty(changes, "system.damage.formula") ?? item._source.system.damage?.formula);
+    const levelChanged = foundry.utils.hasProperty(changes, "system.level.value");
+    const templateChanged = foundry.utils.hasProperty(changes, TEMPLATE_PATH);
+    if (!adopted && !levelChanged && !templateChanged) return;
+    const template = adopted ?? formulaTemplate(
+      templateChanged ? foundry.utils.getProperty(changes, TEMPLATE_PATH) : item.flags?.[TEMPLATE_SCOPE]?.[TEMPLATE_FLAG],
+    );
+    if (!template) return;
+    if (!game.settings.get(MODULE_ID, "consumableFormulaTemplates")) return;
+
+    const changedLevel = foundry.utils.getProperty(changes, "system.level.value");
+    const level = Number.isFinite(changedLevel) ? changedLevel : (item.system.level?.value ?? 1);
+    foundry.utils.setProperty(changes, "system.damage.formula", bakeFormula(template, level));
+    if (adopted) foundry.utils.setProperty(changes, TEMPLATE_PATH, adopted);
+  } catch (err) {
+    console.error(`${MODULE_ID} | consumableFormulaTemplates update failed`, err);
   }
 });
